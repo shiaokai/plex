@@ -42,7 +42,6 @@ for p=1:length(paramSets)
   disp(paramSet);
   
   % load training images
-
   [I,y]=readAllImgs(fullfile(dPath,trnD,'train',trnT),chC,nTrn,...
     fullfile(dPath,trnBg,'train'),nBg);
   x=fevalArrays(I,cFtr)';
@@ -73,8 +72,8 @@ for p=1:length(paramSets)
   % bootstrap
 
   has_parallel=cfg.has_parallel;
-  
   if has_parallel
+      if matlabpool('size')>0, matlabpool close; end
       matlabpool open
       run_desc=evalc('disp(paramSet)');
       progress_file=['progress_trainChClfs_',filterDescription(run_desc)];
@@ -82,7 +81,6 @@ for p=1:length(paramSets)
       system(['touch ', progress_file]);
       system(['echo ''' run_desc ''' >> ' progress_file]);
       fprintf('Using Parfor in trainChClfs. Progress file here: %s',progress_file);
-      % create progress file
       ticId=[];
   else
       ticId=ticStatus('Mining hard negatives',1,30,1);

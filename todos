@@ -1,0 +1,4 @@
+- migrate globals to cfg structure
+- make everything use parfor when available
+- add a time limit to worddet
+
