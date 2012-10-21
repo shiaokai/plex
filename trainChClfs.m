@@ -11,7 +11,7 @@ function trainChClfs
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-[dPath,ch,ch1,chC,chClfNm]=globals;
+[dPath,ch,~,chC,chClfNm,~,cfg]=globals;
 % parameters that pretty much won't change
 sBin=8; oBin=8; chH=48;
 S=6; M=256; thrr=[0 1]; nTrn=Inf;
@@ -37,16 +37,16 @@ for p=1:length(paramSets)
   cNm=chClfNm(clfPrms{:}); clfPath=fullfile(cDir,[cNm,'.mat']);
   newBg=[trnBg,'Bt'];
 
+  RandStream.getGlobalStream.reset();
   fprintf('Working on: ');
   disp(paramSet);
   
   % load training images
-  RandStream.getDefaultStream.reset();
+
   [I,y]=readAllImgs(fullfile(dPath,trnD,'train',trnT),chC,nTrn,...
     fullfile(dPath,trnBg,'train'),nBg);
   x=fevalArrays(I,cFtr)';
   % train char classifier
-  RandStream.getDefaultStream.reset();
   [ferns,yh]=fernsClfTrain(double(x),y,struct('S',S,'M',M,'thrr',thrr,'bayes',1));
   fprintf('training error=%f\n',mean(y~=yh));
   if(~exist(cDir,'dir')),mkdir(cDir); end
@@ -56,7 +56,7 @@ for p=1:length(paramSets)
 
   % bootstrap classifier if flag is on
   if ~bs, continue; end
-  
+  %  fModel = load('cache_foo');
   % copy base bg folder to new bootstrap folder
   fullBgD=fullfile(dPath,trnBg,'train','charBg');
   fullNewBgD=fullfile(dPath,newBg,'train','charBg');
@@ -66,13 +66,29 @@ for p=1:length(paramSets)
   end  
   mkdir(fullNewBgD);
   copyfile(fullBgD,fullNewBgD);
-
-  maxn=100; w=length(dir(fullfile(fullNewBgD,'*png'))); %<- starting index
+  
+  maxn=100; n_start=length(dir(fullfile(fullNewBgD,'*png'))); %<- starting index
   files=dir(fullfile(dPath,trnBg,'train','images','*.jpg')); files={files.name};
   filesAnn=dir(fullfile(dPath,trnBg,'train','wordAnn','*.txt')); filesAnn={filesAnn.name};
   % bootstrap
-  ticId=ticStatus('Mining hard negatives',1,30,1);
-  for f=1:length(files), 
+
+  has_parallel=cfg.has_parallel;
+  
+  if has_parallel
+      matlabpool open
+      run_desc=evalc('disp(paramSet)');
+      progress_file=['progress_trainChClfs_',filterDescription(run_desc)];
+      if exist(progress_file,'file'); delete(progress_file); end
+      system(['touch ', progress_file]);
+      system(['echo ''' run_desc ''' >> ' progress_file]);
+      fprintf('Using Parfor in trainChClfs. Progress file here: %s',progress_file);
+      % create progress file
+      ticId=[];
+  else
+      ticId=ticStatus('Mining hard negatives',1,30,1);
+  end
+  
+  parfor f=1:length(files), 
     I=imread(fullfile(dPath,trnBg,'train','images',files{f}));
     if ~isempty(filesAnn)
       gtBbs=bbGt('bbLoad',fullfile(dPath,trnBg,'train','wordAnn',filesAnn{f}));
@@ -92,9 +108,28 @@ for p=1:length(paramSets)
       gtBbs1,'thr',.01});
     if(isempty(P)), continue; end
     P=cell2array(P);
-    imwrite2(P,size(P,4)>1,w,fullNewBgD);
-    w=w+size(P,4);
-    tocStatus(ticId,f/length(files));
+
+    imwrite2(P,size(P,4)>1,n_start+maxn*(f-1),fullNewBgD);   
+    if has_parallel
+        dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
+        system(['echo ''' dt, ' : ' files{f} ''' >> ' progress_file]);
+    else
+        tocStatus(ticId,f/length(files));
+    end
+  end
+  
+  if cfg.has_parallel
+      matlabpool close
+  end
+  
+  % squeeze image IDs
+  files=dir(fullfile(fullNewBgD,'*png')); files = {files.name};
+  for dest_idx=1:length(files), src_nm=files{dest_idx};
+      src_path=fullfile(fullNewBgD,src_nm);
+      dst_path=fullfile(fullNewBgD,sprintf('I%05d.png',dest_idx-1));
+      if ~strcmp(src_path,dst_path)
+          movefile(src_path,dst_path);
+      end
   end
 
   % re-train again
@@ -102,12 +137,12 @@ for p=1:length(paramSets)
   clfPrms={'S',S,'M',M,'trnT',trnT,'bgDir',newBg,...
     'nBg',nBtBg,'nTrn',nTrn};
   cNm=chClfNm(clfPrms{:});
-  RandStream.getDefaultStream.reset();
+  RandStream.getGlobalStream.reset();
   [I,y]=readAllImgs(fullfile(dPath,trnD,'train',trnT),chC,nTrn,...
     fullfile(dPath,newBg,'train'),nBtBg);
   x=fevalArrays(I,cFtr)';
   % train char classifier
-  RandStream.getDefaultStream.reset();
+  RandStream.getGlobalStream.reset();
   [ferns,yh]=fernsClfTrain(double(x),y,struct('S',S,'M',M,'thrr',thrr,'bayes',1));
   fprintf('training error=%f\n',mean(y~=yh));
   if(~exist(cDir,'dir')),mkdir(cDir); end

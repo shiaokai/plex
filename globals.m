@@ -1,4 +1,4 @@
-function [dPath,ch,ch1,chC,chClfNm,dfNP]=globals
+function [dPath,ch,ch1,chC,chClfNm,dfNP,cfg]=globals
 % Global variables
 % 
 % USAGE
@@ -30,6 +30,13 @@ chClfNm=@(varargin)chClfNm1(varargin{:});
 % default character-level NMS parameters
 dfNP={'thr',-75,'separate',1,'type','maxg','resize',{3/4,1/2},...
   'ovrDnm','union','overlap',.2,'maxn',inf};
+
+% migrate to 'cfg' struct
+
+v=ver;
+cfg = struct();
+cfg.has_parallel=any(strcmp({v.Name},'Parallel Computing Toolbox'));
+cfg.progress='monitor_progress.txt';
 end
 
 function t=chClfNm1(varargin)
