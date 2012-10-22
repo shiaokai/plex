@@ -15,8 +15,8 @@ function prepC74k
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-[dPath,ch,ch1,chC]=globals;
-iPath = fullfile(dPath, 'c74k/raw/English/Img');
+cfg=globals;
+iPath = fullfile(cfg.dPath, 'c74k/raw/English/Img');
 load(fullfile(iPath, 'lists.mat'));
 
 % the last column contains the indices of the 15/class training
@@ -30,7 +30,7 @@ testlabs = list.ALLlabels(testinds);
 testnames = list.ALLnames(testinds,:);
 
 % assume data is in a folder one level below
-iPath = fullfile(dPath, 'c74k/raw/English/Img');
+iPath = fullfile(cfg.dPath, 'c74k/raw/English/Img');
 sz=100; I=zeros(sz,sz,3,length(traininds));
 
 for i = 1:size(traininds,1)
@@ -43,7 +43,7 @@ for i = 1:size(traininds,1)
 end
 
 figure(1); montage2(uint8(I(:,:,:,:)),struct('hasChn',1));
-writeAllImgs(I,trainlabs,chC,fullfile(dPath,'c74k','train','char'));
+writeAllImgs(I,trainlabs,cfg.chC,fullfile(cfg.dPath,'c74k','train','char'));
 
 I=zeros(sz,sz,3,length(traininds));
 for i = 1:size(traininds,1)
@@ -56,5 +56,5 @@ for i = 1:size(traininds,1)
 end
 
 figure(2); montage2(uint8(I(:,:,:,:)),struct('hasChn',1));
-writeAllImgs(I,testlabs,chC,fullfile(dPath,'c74k','test','char'));
+writeAllImgs(I,testlabs,cfg.chC,fullfile(cfg.dPath,'c74k','test','char'));
 

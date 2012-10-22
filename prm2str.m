@@ -1,4 +1,4 @@
-function str=filterDescription(in)
+function str=prm2str(in)
 % Simple function to strip weird characters out of parameter cells
 % so that they can be more easily displayed as a string for debugging
 

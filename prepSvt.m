@@ -16,12 +16,12 @@ function prepSvt
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-dPath=globals;
-RandStream.getDefaultStream.reset();
+cfg=globals;
+RandStream.getGlobalStream.reset();
 
 datarel=fullfile('svt','raw');
-repackage(dPath, datarel, 'train.xml', fullfile('svt','train'));
-repackage(dPath, datarel, 'test.xml', fullfile('svt','test'));
+repackage(cfg.dPath, datarel, 'train.xml', fullfile('svt','train'));
+repackage(cfg.dPath, datarel, 'test.xml', fullfile('svt','test'));
 
 cropWords('train',0);
 cropWords('train',1);
@@ -31,7 +31,7 @@ cropWords('test',1);
 end
 
 function cropWords(d,usePad)
-dPath=globals; d1=fullfile(dPath,'svt',d);
+cfg=globals; d1=fullfile(cfg.dPath,'svt',d);
 
 if usePad
   wdir='wordsPad'; adir='wordCharAnnPad'; ldir='wordLexPad'; percpad=.2;

@@ -15,27 +15,27 @@ function prepIcdar
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-dPath=globals;
+cfg=globals;
 % common character dimensions and # background samples
 chSz=100; nBg=5000;
-RandStream.getDefaultStream.reset();
+RandStream.getGlobalStream.reset();
 
 trainrel = fullfile('icdar','raw', 'SceneTrialTrain');
 testrel = fullfile('icdar','raw', 'SceneTrialTest');
 
-%repackage(dPath, trainrel, fullfile('icdar','train'));
-%repackage(dPath, testrel, fullfile('icdar','test'));
+repackage(cfg.dPath, trainrel, fullfile('icdar','train'));
+repackage(cfg.dPath, testrel, fullfile('icdar','test'));
 
 % create cropped character data with and without padding
-% cropChars('train',chSz,nBg,0);
-% cropChars('train',chSz,nBg,1);
-% cropChars('test',chSz,nBg,0);
-% cropChars('test',chSz,nBg,1);
+cropChars('train',chSz,nBg,0);
+cropChars('train',chSz,nBg,1);
+cropChars('test',chSz,nBg,0);
+cropChars('test',chSz,nBg,1);
 
 % create cropped words data with and without padding
-% cropWords('train',0);
-% cropWords('train',1);
-% cropWords('test',0);
+cropWords('train',0);
+cropWords('train',1);
+cropWords('test',0);
 cropWords('test',1);
 
 end
@@ -44,7 +44,7 @@ function cropChars(d,sz,nBg,easy)
 % easy=1 means tightly cropped characters.
 % easy=0 means cropped with possible neighbors
 
-[dPath,ch,ch1,chC]=globals; d1=fullfile(dPath,'icdar',d);
+cfg=globals; d1=fullfile(cfg.dPath,'icdar',d);
 files=dir(fullfile(d1,'images','*.jpg')); n=length(files);
 I=zeros([sz,sz,3,1e4],'uint8'); y=zeros(1,1e4); k0=1;
 B=zeros([sz,sz,3,nBg],'uint8'); b0=1; nBg1=ceil(nBg/n);
@@ -52,9 +52,9 @@ for k=1:n
   I1=imread(fullfile(d1,'images',files(k).name));
   fName=fullfile(d1,'charAnn',[files(k).name,'.txt']);
   %[objs,bbs]=bbGt('bbLoad',fullfile(d1,'charAnn',[files(k).name,'.txt']));
-  for j=1:length(chC)
+  for j=1:length(cfg.chC)
     %bbs=bbGt('toGt',objs,{'lbls',chC(j)});
-    [~,bbs]=bbGt('bbLoad',fName,'lbls',chC(j));
+    [~,bbs]=bbGt('bbLoad',fName,'lbls',cfg.chC(j));
     a=bbApply('area',bbs); bbs=bbs(a>0,:); % remove weird bbs
     if(easy)
       P=bbApply('crop',I1,bbs,'replicate');
@@ -83,14 +83,14 @@ for k=1:n
   B(:,:,:,b0:b0+length(B1)-1)=cell2array(B1); b0=b0+length(B1);
 end
 I=I(:,:,:,1:k0-1); y=y(1:k0-1); B=B(:,:,:,1:b0-1);
-bgD=fullfile(dPath,'icdar',d,'charBg');
+bgD=fullfile(cfg.dPath,'icdar',d,'charBg');
 if(~exist(bgD,'dir')), mkdir(bgD); end; imwrite2(B,1,0,bgD);
-if(easy), writeAllImgs(I,y,chC,fullfile(dPath,'icdar',d,'charEasy'));
-else writeAllImgs(I,y,chC,fullfile(dPath,'icdar',d,'charHard')); end
+if(easy), writeAllImgs(I,y,cfg.chC,fullfile(cfg.dPath,'icdar',d,'charEasy'));
+else writeAllImgs(I,y,cfg.chC,fullfile(cfg.dPath,'icdar',d,'charHard')); end
 end
 
 function cropWords(d,usePad)
-dPath=globals; d1=fullfile(dPath,'icdar',d);
+cfg=globals; d1=fullfile(cfg.dPath,'icdar',d);
 
 if usePad,
   wdir='wordsPad'; adir='wordCharAnnPad'; percpad = .25;
@@ -117,8 +117,8 @@ for k=1:n
     xpad=round(wbb(3)*percpad); ypad=round(wbb(4)*percpad);
     pwbb=[wbb(1)-xpad,wbb(2)-ypad,wbb(3)+2*xpad,wbb(4)+2*ypad];
     Iw=bbApply('crop',I,pwbb,'circular');
-    %newimgbase=sprintf('I%05d',wctr); wctr=wctr+1;
-    newimgbase=sprintf('%04d',wctr); wctr=wctr+1;
+    newimgbase=sprintf('I%05d',wctr); wctr=wctr+1;
+    %newimgbase=sprintf('%04d',wctr); wctr=wctr+1;
     imwrite(Iw{1},fullfile(d1,wdir,[newimgbase,'.jpg']),'jpg');
     
     % check sizes

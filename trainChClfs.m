@@ -11,7 +11,7 @@ function trainChClfs
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-[dPath,ch,~,chC,chClfNm,~,cfg]=globals;
+cfg=globals;
 % parameters that pretty much won't change
 sBin=8; oBin=8; chH=48;
 S=6; M=256; thrr=[0 1]; nTrn=Inf;
@@ -23,7 +23,6 @@ cFtr=cHogFtr;
 %           bg dataset,# bg images,bootstrap}
 paramSets={{'synth','charHard','msrc',5000,1},...
            {'icdar','charHard','icdar',5000,1}};
-           
 
 fprintf('Training character classifiers.\n');
 % Loop over param sets
@@ -31,10 +30,10 @@ for p=1:length(paramSets)
   paramSet=paramSets{p};
   trnD=paramSet{1}; trnT=paramSet{2}; trnBg=paramSet{3}; 
   nBg=paramSet{4}; bs=paramSet{5};
-  cDir=fullfile(dPath,trnD,'clfs');
+  cDir=fullfile(cfg.dPath,trnD,'clfs');
   clfPrms={'S',S,'M',M,'trnT',trnT,'bgDir',trnBg,'nBg',...
     nBg,'nTrn',nTrn};
-  cNm=chClfNm(clfPrms{:}); clfPath=fullfile(cDir,[cNm,'.mat']);
+  cNm=cfg.chClfNm(clfPrms{:}); clfPath=fullfile(cDir,[cNm,'.mat']);
   newBg=[trnBg,'Bt'];
 
   RandStream.getGlobalStream.reset();
@@ -42,8 +41,8 @@ for p=1:length(paramSets)
   disp(paramSet);
   
   % load training images
-  [I,y]=readAllImgs(fullfile(dPath,trnD,'train',trnT),chC,nTrn,...
-    fullfile(dPath,trnBg,'train'),nBg);
+  [I,y]=readAllImgs(fullfile(cfg.dPath,trnD,'train',trnT),cfg.chC,nTrn,...
+    fullfile(cfg.dPath,trnBg,'train'),nBg);
   x=fevalArrays(I,cFtr)';
   % train char classifier
   [ferns,yh]=fernsClfTrain(double(x),y,struct('S',S,'M',M,'thrr',thrr,'bayes',1));
@@ -57,8 +56,8 @@ for p=1:length(paramSets)
   if ~bs, continue; end
   %  fModel = load('cache_foo');
   % copy base bg folder to new bootstrap folder
-  fullBgD=fullfile(dPath,trnBg,'train','charBg');
-  fullNewBgD=fullfile(dPath,newBg,'train','charBg');
+  fullBgD=fullfile(cfg.dPath,trnBg,'train','charBg');
+  fullNewBgD=fullfile(cfg.dPath,newBg,'train','charBg');
   if(exist(fullNewBgD,'dir')), 
     fprintf('Clearing out old hardnegative folder');
     rmdir(fullNewBgD,'s'); 
@@ -67,8 +66,8 @@ for p=1:length(paramSets)
   copyfile(fullBgD,fullNewBgD);
   
   maxn=100; n_start=length(dir(fullfile(fullNewBgD,'*png'))); %<- starting index
-  files=dir(fullfile(dPath,trnBg,'train','images','*.jpg')); files={files.name};
-  filesAnn=dir(fullfile(dPath,trnBg,'train','wordAnn','*.txt')); filesAnn={filesAnn.name};
+  files=dir(fullfile(cfg.dPath,trnBg,'train','images','*.jpg')); files={files.name};
+  filesAnn=dir(fullfile(cfg.dPath,trnBg,'train','wordAnn','*.txt')); filesAnn={filesAnn.name};
   % bootstrap
 
   has_parallel=cfg.has_parallel;
@@ -76,7 +75,7 @@ for p=1:length(paramSets)
       if matlabpool('size')>0, matlabpool close; end
       matlabpool open
       run_desc=evalc('disp(paramSet)');
-      progress_file=['progress_trainChClfs_',filterDescription(run_desc)];
+      progress_file=[cfg.progress_prefix(),prm2str(run_desc)];
       if exist(progress_file,'file'); delete(progress_file); end
       system(['touch ', progress_file]);
       system(['echo ''' run_desc ''' >> ' progress_file]);
@@ -87,9 +86,9 @@ for p=1:length(paramSets)
   end
   
   parfor f=1:length(files), 
-    I=imread(fullfile(dPath,trnBg,'train','images',files{f}));
+    I=imread(fullfile(cfg.dPath,trnBg,'train','images',files{f}));
     if ~isempty(filesAnn)
-      gtBbs=bbGt('bbLoad',fullfile(dPath,trnBg,'train','wordAnn',filesAnn{f}));
+      gtBbs=bbGt('bbLoad',fullfile(cfg.dPath,trnBg,'train','wordAnn',filesAnn{f}));
       gtBbs1=reshape([gtBbs.bb],4,[])';
       gtBbs1=[gtBbs1, zeros(size(gtBbs1,1),1)];
     else
@@ -97,7 +96,7 @@ for p=1:length(paramSets)
     end
 
     bbs=charDet(I,fModel,{'thr',0,'minH',.1});
-    bbs(:,6)=equivClass(bbs(:,6),ch);
+    bbs(:,6)=equivClass(bbs(:,6),cfg.ch);
     bbs=bbNms(bbs,'thr',0,'separate',0,'type','maxg',...
       'resize',{1,1},'ovrDnm','union','overlap',.2,'maxn',inf);
 
@@ -134,10 +133,10 @@ for p=1:length(paramSets)
   nBtBg=2*nBg;
   clfPrms={'S',S,'M',M,'trnT',trnT,'bgDir',newBg,...
     'nBg',nBtBg,'nTrn',nTrn};
-  cNm=chClfNm(clfPrms{:});
+  cNm=cfg.chClfNm(clfPrms{:});
   RandStream.getGlobalStream.reset();
-  [I,y]=readAllImgs(fullfile(dPath,trnD,'train',trnT),chC,nTrn,...
-    fullfile(dPath,newBg,'train'),nBtBg);
+  [I,y]=readAllImgs(fullfile(cfg.dPath,trnD,'train',trnT),cfg.chC,nTrn,...
+    fullfile(cfg.dPath,newBg,'train'),nBtBg);
   x=fevalArrays(I,cFtr)';
   % train char classifier
   RandStream.getGlobalStream.reset();

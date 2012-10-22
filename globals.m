@@ -1,4 +1,4 @@
-function [dPath,ch,ch1,chC,chClfNm,dfNP,cfg]=globals
+function [cfg,dPath,ch,ch1,chC,chClfNm,dfNP]=globals
 % Global variables
 % 
 % USAGE
@@ -33,10 +33,31 @@ dfNP={'thr',-75,'separate',1,'type','maxg','resize',{3/4,1/2},...
 
 % migrate to 'cfg' struct
 
-v=ver;
 cfg = struct();
+
+[~,hostname] = system('hostname');
+hostname = strtrim(hostname);
+
+switch hostname
+  case 'ballotscan'
+    cfg.dPath='/users/u1/kai/sharedata/plex/';
+  otherwise
+    error('Need to fill this in on new machines!');
+end
+
+cfg.ch='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_';
+cfg.chC=mat2cell(ch',ones(length(ch),1));
+cfg.chClfNm=@(varargin)chClfNm1(varargin{:});
+% default character nms params
+cfg.dfNP={'thr',-75,'separate',1,'type','maxg','resize',{3/4,1/2},...
+    'ovrDnm','union','overlap',.2,'maxn',inf};
+
+% parfor check
+v=ver;
 cfg.has_parallel=any(strcmp({v.Name},'Parallel Computing Toolbox'));
-cfg.progress='monitor_progress.txt';
+cfg.progress_prefix=@create_progress_name;
+
+
 end
 
 function t=chClfNm1(varargin)
@@ -49,3 +70,7 @@ t=sprintf('fern_S%01iM%03itrnSet%strnT%sbgDir%snBg%inTrn%i',S,M,trnSet,...
   trnT,bgDir,nBg,nTrn);
 end
 
+function fname=create_progress_name
+cur_pos=dbstack(1); % unroll once
+fname=['progress_',cur_pos.name,'_'];
+end

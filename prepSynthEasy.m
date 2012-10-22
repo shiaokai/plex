@@ -21,21 +21,21 @@ else
   end
 end
 
-[dPath,ch,ch1,chC]=globals;
-RandStream.setDefaultStream(RandStream('mrg32k3a', 'Seed', sum(type)));
+cfg=globals;
+RandStream.setGlobalStream(RandStream('mrg32k3a', 'Seed', sum(type)));
 % render 500 instances per class at size 100 pixels
 n=500; sz=100;
-for k=1:length(ch)
+for k=1:length(cfg.ch)
   I=zeros(sz,sz,3,n,'uint8'); k0=1;
   for i=1:n % n synthetic examples per character
     if strcmp(type,'train')    
-      I(:,:,:,k0)=genChar(ch(k),sz, ' ', [1 1]); k0=k0+1;
+      I(:,:,:,k0)=genChar(cfg.ch(k),sz, ' ', [1 1]); k0=k0+1;
     else
-      I(:,:,:,k0)=genChar(ch(k),sz, ' ', [500 1]); k0=k0+1;
+      I(:,:,:,k0)=genChar(cfg.ch(k),sz, ' ', [500 1]); k0=k0+1;
     end
   end
   y=k*ones(1,n); y=y(:);
-  writeAllImgs(I,y,chC,fullfile(dPath,'synth_easy',type,'char'));
+  writeAllImgs(I,y,cfg.chC,fullfile(cfg.dPath,'synth_easy',type,'char'));
   clear I;
 end
 end
