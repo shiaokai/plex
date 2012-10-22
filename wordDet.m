@@ -60,8 +60,10 @@ end
 
 function [words, pictres] = plexApply(bbs, ch, lex, varargin)
 dfs={'alpha',.8,'radx',3,'rady',1,'rads',2,'cap',500,'mpw',5,...
-  'wthr',Inf,'wolap',.5};
-[prm.alpha,prm.radx,prm.rady,prm.rads,prm.cap,prm.mpw,prm.wthr,prm.wolap] = getPrmDflt(varargin,dfs,1);
+  'wthr',Inf,'wolap',.5,'timeout',120};
+[prm.alpha,prm.radx,prm.rady,prm.rads,prm.cap,prm.mpw,prm.wthr,prm.wolap,prm.timeout] = getPrmDflt(varargin,dfs,1);
+
+tStart=tic;
 
 % ASSUMPTIONS
 % - words are at least 2 letters
@@ -73,6 +75,10 @@ if(size(bbs,1)==0), return; end
 % consider each child of root node
 top=lex(1);
 for leafi=1:length(top.kids), leaf_t=top.kids(leafi);
+  
+  % check for timeout
+  if toc(tStart) > prm.timeout, break; end
+  
   chibbs=bbs(bbs(:,6)==leafi,:);
   if(leaf_t==-1), continue; end
   if(isempty(chibbs)), continue; end  

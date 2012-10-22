@@ -45,10 +45,7 @@ for p=1:length(paramSets)
   % set up output locations
   d1=fullfile(tstDir,['res-' trnD],cNm,'images');
   
-  %if(~exist(d1,'dir')), mkdir(d1); end
-  if(exist(d1,'dir')), 
-    rmdir(d1,'s');
-  end
+  if(exist(d1,'dir')), rmdir(d1,'s'); end
   mkdir(d1);
   save(fullfile(d1,'workspace')); % save all variables up to now
   saveRes=@(f,words,t1,t2,t3)save(f,'words','t1','t2','t3');
@@ -91,7 +88,7 @@ for p=1:length(paramSets)
 
     if has_par
         dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
-        system(['echo ''' dt, ' : ' sF ''' >> ' progress_file]);
+        system(['echo ''' dt ' : ' num2str(t3) ' : ' sF ''' >> ' progress_file]);
     else
         tocStatus(ticId,f/nImg);
     end
