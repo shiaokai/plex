@@ -8,7 +8,7 @@ function createTable2
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-[dPath,ch,ch1,chC,chClfNm]=globals;
+cfg=globals;
 
 S=6; M=256; nTrn=Inf; minH=.6; topK=100;
 frnPrms={'ss',2^(1/5),'minH',minH};
@@ -23,7 +23,7 @@ paramSets={{'synth','charHard','msrcBt',10000},...
 % tstSet={test dataset, number of distractors}
 tstSets={{'svt',Inf},{'icdar',50},{'icdar',Inf}};
 
-RandStream.getDefaultStream.reset();
+RandStream.getGlobalStream.reset();
 dbgFileNm=sprintf('table2_%i_%i_%i_%i_%i_%1.2f.txt',clock);
 fid=fopen(dbgFileNm,'w'); fprintf('LOG:%s\n',dbgFileNm);
 labNm='wordCharAnnPad'; datNm='wordsPad';
@@ -31,10 +31,10 @@ for p=1:length(paramSets)
   clear I y; paramSet=paramSets{p};
   trnD=paramSet{1}; trnT=paramSet{2}; trnBg=paramSet{3}; nBg=paramSet{4};
   
-  cDir=fullfile(dPath,trnD,'clfs');
+  cDir=fullfile(cfg.dPath,trnD,'clfs');
   clfPrms={'S',S,'M',M,'trnT',trnT,'bgDir',trnBg,...
     'nBg',nBg,'nTrn',nTrn};
-  cNm=chClfNm(clfPrms{:}); clfPath=fullfile(cDir,[cNm,'.mat']);
+  cNm=cfg.chClfNm(clfPrms{:}); clfPath=fullfile(cDir,[cNm,'.mat']);
   if(~exist(clfPath,'file')), error('FERN DOES NOT EXIST?!\n'); end
   fModel=load(clfPath);
   fprintf(fid,'CLF:%s\n',clfPath);
@@ -42,7 +42,7 @@ for p=1:length(paramSets)
   % loop over test sets
   for i=1:length(tstSets)
     tstSet=tstSets{i}; tstD=tstSet{1}; kVal=tstSet{2};
-    tstDir=fullfile(dPath,tstD,'test');
+    tstDir=fullfile(cfg.dPath,tstD,'test');
     fprintf(fid,'TEST DIR:%s\n',tstDir); fprintf(fid,'KVAL:%i\n',kVal);
     
     allGtStrs=[];

@@ -7,8 +7,8 @@ function genLexIcdar
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-dPath=globals;
-RandStream.setDefaultStream(RandStream('mrg32k3a', 'Seed', sum('iccv11')));
+cfg=globals;
+RandStream.setGlobalStream(RandStream('mrg32k3a', 'Seed', sum('iccv11')));
 
 % paramSet={dataset, test split, k distractors}
 paramSets={{'icdar','test',5},...
@@ -22,8 +22,8 @@ for p=1:length(paramSets)
   paramSet=paramSets{p};
   tstD=paramSet{1}; tstSpl=paramSet{2}; kVal=paramSet{3};
          
-  gtDir=fullfile(dPath,tstD,tstSpl,'wordAnn');
-  lexDir=fullfile(dPath,tstD,tstSpl,sprintf('lex%i',kVal));
+  gtDir=fullfile(cfg.dPath,tstD,tstSpl,'wordAnn');
+  lexDir=fullfile(cfg.dPath,tstD,tstSpl,sprintf('lex%i',kVal));
   if(~exist(lexDir,'dir')), mkdir(lexDir); end
   
   files=dir([gtDir '/*.txt']); files={files.name};

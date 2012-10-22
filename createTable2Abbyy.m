@@ -19,11 +19,11 @@ end
 function evalIcdar(kVal)
 % Evaluate ABBYY output on ICDAR data
 
-dPath=globals;
-RandStream.getDefaultStream.reset();
-tstDir=fullfile(dPath,'icdar','test');
+cfg=globals;
+RandStream.getGlobalStream.reset();
+tstDir=fullfile(cfg.dPath,'icdar','test');
 nTot=0; nCor=0; labNm='wordCharAnnPad';
-datadir=fullfile(dPath,'icdar','test','abbyy','wordsPad');
+datadir=fullfile(cfg.dPath,'icdar','test','abbyy','wordsPad');
 allGtStrs=[];
 for j=0:length(dir(fullfile(tstDir,labNm,'*.txt')))-1
   objs=bbGt('bbLoad',fullfile(tstDir,labNm,sprintf('I%05i.jpg.txt',j)));
@@ -68,15 +68,15 @@ end
 function evalSvt
 % Evaluate ABBYY output on SVT data
 
-dPath=globals;
+cfg=globals;
 tstSet=fullfile('svt','test');
 nDet=0; nTot=0; nCor=0;
 labNm='wordCharAnnPad'; lexNm='wordLexPad';
-datadir=fullfile(dPath,'svt','test','abbyy','wordsPad');
-n=length(dir(fullfile(dPath,tstSet,labNm,'*.txt')));
+datadir=fullfile(cfg.dPath,'svt','test','abbyy','wordsPad');
+n=length(dir(fullfile(cfg.dPath,tstSet,labNm,'*.txt')));
 for f=0:n-1
-  objs=bbGt('bbLoad',fullfile(dPath,tstSet,labNm,sprintf('I%05i.jpg.txt',f)));
-  lfile=fullfile(dPath,tstSet,lexNm,sprintf('I%05i.jpg.txt',f));
+  objs=bbGt('bbLoad',fullfile(cfg.dPath,tstSet,labNm,sprintf('I%05i.jpg.txt',f)));
+  lfile=fullfile(cfg.dPath,tstSet,lexNm,sprintf('I%05i.jpg.txt',f));
   
   fid=fopen(lfile,'r');
   lexS=textscan(fid,'%s'); lexS=lexS{1}';

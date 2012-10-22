@@ -1,16 +1,17 @@
-function [cfg,dPath,ch,ch1,chC,chClfNm,dfNP]=globals
+function cfg=globals
 % Global variables
 % 
 % USAGE
-%  [dPath,ch,ch1,chC,chClfNm,dfNP]=globals
+%  cfg=globals
 %
 % OUTPUTS
-%  dPath      - base directory for data (modify this before running!)
-%  ch         - list of character classes
-%  ch1        - list of collapsed character classes (upper == lower)
-%  chC        - character classes in a column cell
-%  chClfNm    - function handle to return a crazy classifier name from vars
-%  dfNP       - default character NMS params
+%  cfg
+%   .dPath      - base directory for data (modify this before running!)
+%   .ch         - list of character classes
+%   .ch1        - list of collapsed character classes (upper == lower)
+%   .chC        - character classes in a column cell
+%   .chClfNm    - function handle to return a crazy classifier name from vars
+%   .dfNP       - default character NMS params
 %
 % CREDITS
 %  Written and maintained by Kai Wang and Boris Babenko
@@ -18,20 +19,8 @@ function [cfg,dPath,ch,ch1,chC,chClfNm,dfNP]=globals
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-%dPath = '/home/kai/datafresh/';
-dPath = '/users/u1/kai/sharedata/plex/';
-
-ch='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_';
-chC=mat2cell(ch',ones(length(ch),1));
-chClfNm=@(varargin)chClfNm1(varargin{:});
-% make equivalent lower case and capital letters
-[~,ch1]=equivClass(1:length(ch),ch); 
-
-% default character-level NMS parameters
-dfNP={'thr',-75,'separate',1,'type','maxg','resize',{3/4,1/2},...
-  'ovrDnm','union','overlap',.2,'maxn',inf};
-
-% migrate to 'cfg' struct
+persistent v;
+persistent has_par;
 
 cfg = struct();
 
@@ -39,24 +28,28 @@ cfg = struct();
 hostname = strtrim(hostname);
 
 switch hostname
-  case 'ballotscan'
-    cfg.dPath='/users/u1/kai/sharedata/plex/';
-  otherwise
-    error('Need to fill this in on new machines!');
+    case 'ballotscan'
+        cfg.dPath='/users/u1/kai/sharedata/plex/';
+    otherwise
+        error('Need to fill this in on new machines!');
 end
 
 cfg.ch='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_';
-cfg.chC=mat2cell(ch',ones(length(ch),1));
+cfg.chC=mat2cell(cfg.ch',ones(length(cfg.ch),1));
+[~,ch1]=equivClass(1:length(cfg.ch),cfg.ch);
+cfg.ch1=ch1;
 cfg.chClfNm=@(varargin)chClfNm1(varargin{:});
 % default character nms params
 cfg.dfNP={'thr',-75,'separate',1,'type','maxg','resize',{3/4,1/2},...
     'ovrDnm','union','overlap',.2,'maxn',inf};
 
 % parfor check
-v=ver;
-cfg.has_parallel=any(strcmp({v.Name},'Parallel Computing Toolbox'));
+if isempty(v)
+    v=ver;
+    has_par=any(strcmp({v.Name},'Parallel Computing Toolbox'));
+end
+cfg.has_par=has_par;
 cfg.progress_prefix=@create_progress_name;
-
 
 end
 

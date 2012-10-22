@@ -1,4 +1,4 @@
-- migrate globals to cfg structure
+- [done up to trainChClfs] migrate globals to cfg structure
 - make everything use parfor when available
 - add a time limit to worddet
 

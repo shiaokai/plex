@@ -68,10 +68,11 @@ for p=1:length(paramSets)
   maxn=100; n_start=length(dir(fullfile(fullNewBgD,'*png'))); %<- starting index
   files=dir(fullfile(cfg.dPath,trnBg,'train','images','*.jpg')); files={files.name};
   filesAnn=dir(fullfile(cfg.dPath,trnBg,'train','wordAnn','*.txt')); filesAnn={filesAnn.name};
-  % bootstrap
 
-  has_parallel=cfg.has_parallel;
-  if has_parallel
+  % jump into extended for loop
+  
+  has_par=cfg.has_par;
+  if has_par
       if matlabpool('size')>0, matlabpool close; end
       matlabpool open
       run_desc=evalc('disp(paramSet)');
@@ -106,8 +107,9 @@ for p=1:length(paramSets)
     if(isempty(P)), continue; end
     P=cell2array(P);
 
-    imwrite2(P,size(P,4)>1,n_start+maxn*(f-1),fullNewBgD);   
-    if has_parallel
+    imwrite2(P,size(P,4)>1,n_start+maxn*(f-1),fullNewBgD); 
+    
+    if has_par
         dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
         system(['echo ''' dt, ' : ' files{f} ''' >> ' progress_file]);
     else
@@ -115,7 +117,7 @@ for p=1:length(paramSets)
     end
   end
   
-  if cfg.has_parallel
+  if has_par
       matlabpool close
   end
   

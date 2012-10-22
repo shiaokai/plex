@@ -12,13 +12,13 @@ function genPrCurves
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-[dPath,ch,ch1,chC,chClfNm]=globals;
-RandStream.getDefaultStream.reset();
+cfg=globals;
+RandStream.getGlobalStream.reset();
 
 S=6; M=256; nTrn=Inf; 
 trnT='charHard'; trnBg='msrcBt'; nBg=10000;
 clfPrms={'S',S,'M',M,'trnT',trnT,'bgDir',trnBg,'nBg',nBg,'nTrn',nTrn};
-cNm=chClfNm(clfPrms{:});
+cNm=cfg.chClfNm(clfPrms{:});
 
 % testing conditions (ICDAR)
 % -- paramSet={result directory, with/without spell check (for OCR)}
@@ -34,7 +34,7 @@ paramSets={{fullfile('res-synth',cNm),0},...
 %           {fullfile('res-synth-svm',cNm),0}};
 
 % lexicon folder
-lexDir=fullfile(dPath,tstD,tstSpl,lexD);
+lexDir=fullfile(cfg.dPath,tstD,tstSpl,lexD);
          
 pNms=struct('thr',-inf,'ovrDnm','min','overlap',.5); pNms.type='max';
 
@@ -46,17 +46,17 @@ set(gcf,'Position',[50 50 600 300]); hold on;
 xlabel('Recall','FontSize',16); ylabel('Precision','FontSize',16);
 
 % eval params
-iDir=fullfile(dPath,tstD,tstSpl,'images');
+iDir=fullfile(cfg.dPath,tstD,tstSpl,'images');
 evalPrm={'thr',.5,'imDir',iDir,'f0',1,'f1',inf,'lexDir',lexDir,...
   'pNms',pNms};
 
-gtDir=fullfile(dPath,tstD,tstSpl,'wordAnn');
+gtDir=fullfile(cfg.dPath,tstD,tstSpl,'wordAnn');
 
 % loop over each paramset and plot it on the same figure
 for p=1:length(paramSets)
   paramSet=paramSets{p};
   resD=paramSet{1}; isOcr=paramSet{2};
-  dtDir=fullfile(dPath,tstD,tstSpl,resD,'images');
+  dtDir=fullfile(cfg.dPath,tstD,tstSpl,resD,'images');
   [gt,dt] = evalReading(gtDir,dtDir,'ocr',isOcr,evalPrm{:});
   
   [xs,ys,sc]=bbGt('compRoc', gt, dt, 0);
@@ -65,6 +65,6 @@ for p=1:length(paramSets)
   lgs{end+1}=sprintf('%i [%1.3f] thr=%1.3f',p,fs,sc(idx));
   legend(hs,lgs,'Location','SouthWest','FontSize',14);    
 end
-saveas(gcf,fullfile(dPath,tstD,sprintf('%s_%s_%s',cNm,lexD,tstSpl)),'fig');
-savefig(fullfile(dPath,tstD,sprintf('%s_%s_%s',cNm,lexD,tstSpl)),...
+saveas(gcf,fullfile(cfg.dPath,tstD,sprintf('%s_%s_%s',cNm,lexD,tstSpl)),'fig');
+savefig(fullfile(cfg.dPath,tstD,sprintf('%s_%s_%s',cNm,lexD,tstSpl)),...
   'pdf','-fonts');

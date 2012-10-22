@@ -16,12 +16,12 @@ function demoSvt(f)
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-dPath=globals;
+cfg=globals;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load image and request lexicon
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-I=imread(fullfile(dPath,'svt','test','images',sprintf('I%05i.jpg',f)));
+I=imread(fullfile(cfg.dPath,'svt','test','images',sprintf('I%05i.jpg',f)));
 im(I); uLex=input('Enter comma-separated strings for lexicon:','s');
 lexS=textscan(uLex,'%s','Delimiter',',')'; lexS=lexS{1}';
 lexS=strtrim(lexS);

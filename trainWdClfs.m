@@ -7,13 +7,13 @@ function trainWdClfs
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-[dPath,ch,ch1,chC,chClfNm]=globals;
-RandStream.getDefaultStream.reset();
+cfg=globals;
+RandStream.getGlobalStream.reset();
 
 S=6; M=256; nTrn=Inf; 
 trnT='charHard'; trnBg='msrcBt'; nBg=10000;
 clfPrms={'S',S,'M',M,'trnT',trnT,'bgDir',trnBg,'nBg',nBg,'nTrn',nTrn};
-cNm=chClfNm(clfPrms{:});
+cNm=cfg.chClfNm(clfPrms{:});
 
 % -- paramSet={dataset, test split, lexicon dir, results dir}
 paramSets={{'svt','test','lex',fullfile('res-synth')},...
@@ -29,20 +29,20 @@ for p=1:length(paramSets)
   tstD=paramSet{1}; tstSpl=paramSet{2}; 
   lexD=paramSet{3}; resDir=paramSet{4};
 
-  iDir=fullfile(dPath,tstD,tstSpl,'images');
-  gtDir=fullfile(dPath,tstD,tstSpl,'wordAnn');
-  dtDir=fullfile(dPath,tstD,tstSpl,resDir,cNm,'images');
+  iDir=fullfile(cfg.dPath,tstD,tstSpl,'images');
+  gtDir=fullfile(cfg.dPath,tstD,tstSpl,'wordAnn');
+  dtDir=fullfile(cfg.dPath,tstD,tstSpl,resDir,cNm,'images');
 
   pNms1=pNms; pNms1.type='none';
   % training directories
-  gtDirTr=fullfile(dPath,tstD,'train','wordAnn');
-  dtDirTr=fullfile(dPath,tstD,'train',resDir,cNm,'images');
-  lexDirTr=fullfile(dPath,tstD,'train',lexD);
+  gtDirTr=fullfile(cfg.dPath,tstD,'train','wordAnn');
+  dtDirTr=fullfile(cfg.dPath,tstD,'train',resDir,cNm,'images');
+  lexDirTr=fullfile(cfg.dPath,tstD,'train',lexD);
   evalPrmTr={'thr',evalThr,'imDir',iDir,'f0',1,'f1',inf,...
     'lexDir',lexDirTr,'pNms',pNms1};
   
   % directory to save to after re-scoring
-  outDir=fullfile(dPath,tstD,tstSpl,[resDir,'-svm'],cNm,'images');
+  outDir=fullfile(cfg.dPath,tstD,tstSpl,[resDir,'-svm'],cNm,'images');
   if(~exist(outDir,'dir')), mkdir(outDir); end
   
   % eval on training set

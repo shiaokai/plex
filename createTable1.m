@@ -8,7 +8,7 @@ function createTable1
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-[dPath,ch,ch1,chC,chClfNm]=globals;
+cfg=globals;
 
 % paramSet={training dataset,with/without neighboring chars}
 paramSets={{'icdar','charEasy'},...
@@ -17,7 +17,7 @@ paramSets={{'icdar','charEasy'},...
 % tstSet={testing dataset, with/without neighboring chars}
 tstSets={{'icdar','charEasy'},{'icdar','charHard'},{'synth','charHard'}};
 
-RandStream.getDefaultStream.reset();
+RandStream.getGlobalStream.reset();
 sBin=8; oBin=8; chH=48;
 S=6; M=256; thrr=[0 1]; nTrn=Inf;
 cHogFtr=@(I)reshape((5*hogOld(single(imResample(I,[chH,chH])),sBin,oBin)),[],1);
@@ -29,14 +29,14 @@ for p=1:length(paramSets)
   paramSet=paramSets{p};
   trnD=paramSet{1}; trnT=paramSet{2};
   
-  cDir=fullfile(dPath,trnD,'clfs');
+  cDir=fullfile(cfg.dPath,trnD,'clfs');
   clfPrms={'S',S,'M',M,'trnT',trnT,'bgDir','none','nBg',0,'nTrn',nTrn};
-  cNm=chClfNm(clfPrms{:});
+  cNm=cfg.chClfNm(clfPrms{:});
   clfPath=fullfile(cDir,[cNm,'.mat']);
   
   % train fern if doesn't already exist
   if(~exist(clfPath,'file'))
-    [I,y]=readAllImgs(fullfile(dPath,trnD,'train',trnT),chC,nTrn);
+    [I,y]=readAllImgs(fullfile(cfg.dPath,trnD,'train',trnT),cfg.chC,nTrn);
     % extract features
     x=fevalArrays(I,cFtr)';
     % train ferns
@@ -52,12 +52,13 @@ for p=1:length(paramSets)
   for j=1:length(tstSets)
     tstSet=tstSets{j}; tstD=tstSet{1}; tstT=tstSet{2};
     clear I y;
-    [I,y]=readAllImgs(fullfile(dPath,tstD,'test',tstT),chC,Inf);
+    [I,y]=readAllImgs(fullfile(cfg.dPath,tstD,'test',tstT),cfg.chC,Inf);
     % extract features
     x=fevalArrays(I,cFtr)';
     % run ferns: yh are the class ids, and ph are the scores
     [yh,ph]=fernsClfApply(double(x),ferns); [~,yha]=sort(ph,2,'descend');
-    [y1,~]=equivClass(y,ch); yh1=equivClass(yh,ch); yha1=equivClass(yha,ch);
+    [y1,~]=equivClass(y,cfg.ch); yh1=equivClass(yh,cfg.ch); 
+    yha1=equivClass(yha,cfg.ch);
     m=findRanks(y,yha); m1=findRanks(y1,yha1);
     fprintf(fid,'TRAIN:%s-%s TEST:%s-%s: top1 error = %f, top3 error = %f\n',...
       trnD,trnT,tstD,tstT,mean(y~=yh), mean(m>3));

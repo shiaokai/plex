@@ -8,10 +8,10 @@ function valid=checkValidGt(str)
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-[dPath,ch,ch1]=globals;
+cfg=globals;
 valid=1;
 if(length(str)<3), valid=0; return; end
 for j=1:length(str), 
-  if(size(find(ch1==upper(str(j))),2)==0), valid=0; return; end; 
+  if(size(find(cfg.ch1==upper(str(j))),2)==0), valid=0; return; end; 
 end
 end

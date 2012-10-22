@@ -17,6 +17,7 @@ function [allwords,lex]=loadLex(tstDir)
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
+ticId=ticStatus('loadlex',1,30,1);
 allwords=cell(0);
 for k=0:length(dir(fullfile(tstDir,'wordAnn','*.txt')))-1;
   gt=bbGt('bbLoad',fullfile(tstDir,'wordAnn',...
@@ -25,6 +26,7 @@ for k=0:length(dir(fullfile(tstDir,'wordAnn','*.txt')))-1;
     if(~checkValidGt(gt(j).lbl)), continue; end
     allwords{end+1}=gt(j).lbl;
   end
+  tocStatus(ticId,k/length(dir(fullfile(tstDir,'wordAnn','*.txt'))));
 end
 if nargout==2, lex=wordDet('build',allwords); end
 end

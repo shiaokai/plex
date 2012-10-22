@@ -11,7 +11,7 @@ function precompSwtPlex
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-[dPath,ch,ch1,chC,chClfNm]=globals;
+cfg=globals;
 
 type='swtPad';
 % fern parameters
@@ -30,16 +30,16 @@ paramSets={{'synth','charHard','msrcBt',10000,'test'},...
            {'icdar','charHard','icdarBt',10000,'train'}};
 
 for p=1:length(paramSets)
-  RandStream.getDefaultStream.reset();
+  RandStream.getGlobalStream.reset();
   paramSet=paramSets{p};
   trnD=paramSet{1}; trnT=paramSet{2}; trnBg=paramSet{3}; nBg=paramSet{4};
-  tstSpl=paramSet{5}; tstDir=fullfile(dPath,'icdar',tstSpl);
+  tstSpl=paramSet{5}; tstDir=fullfile(cfg.dPath,'icdar',tstSpl);
 
   lexS=loadLex(tstDir);
   % set up classifiers
-  cDir=fullfile(dPath,trnD,'clfs');
+  cDir=fullfile(cfg.dPath,trnD,'clfs');
   clfPrms={'S',S,'M',M,'trnT',trnT,'bgDir',trnBg,'nBg',nBg,'nTrn',nTrn};
-  cNm=chClfNm(clfPrms{:});
+  cNm=cfg.chClfNm(clfPrms{:});
   clfPath=fullfile(cDir,[cNm,'.mat']);
   
   % set up output locations
@@ -53,9 +53,26 @@ for p=1:length(paramSets)
   
   imDir=fullfile(tstDir,'images');
   filesJpg=dir(fullfile(imDir,'*jpg'));
-  tot1=[]; tot2=[]; tot3=[];
-  
-  for i=1:length(filesJpg)
+
+  % jump into extended for loop
+  has_par=cfg.has_par;
+  if has_par
+    if matlabpool('size')>0, matlabpool close; end
+    matlabpool open
+    run_desc=evalc('disp(paramSet)');
+    progress_file=[cfg.progress_prefix(),prm2str(paramSet)];
+    if exist(progress_file,'file'); delete(progress_file); end
+    system(['touch ', progress_file]);
+    system(['echo ''' run_desc ''' >> ' progress_file]);
+    fprintf('Using Parfor in trainChClfs. Progress file here: %s',progress_file);
+    ticId=[];
+  else
+    progress_file='';
+    ticId=ticStatus('Running PLEX on full images',1,30,1);
+  end  
+
+  parfor i=1:length(filesJpg)
+    tot1=[]; tot2=[]; tot3=[];
     subSwtDir=fullfile(imDir,[filesJpg(i).name,'_',type]);
     if(~exist(subSwtDir,'dir')), continue; end
     filesSwtJpg=dir(fullfile(subSwtDir,'*jpg'));
@@ -88,8 +105,18 @@ for p=1:length(paramSets)
       end
       words=[words,words1];
     end
-    saveRes(sF,words,t1,t2,t3);
+    saveRes(sF,words,tot1,tot2,tot3);
+
+    if has_par
+        dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
+        system(['echo ''' dt, ' : ' sF ''' >> ' progress_file]);
+    else
+        tocStatus(ticId,f/nImg);
+    end
+
   end
+
+  if has_par, matlabpool close; end
 end
 
 end

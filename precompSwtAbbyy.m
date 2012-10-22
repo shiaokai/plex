@@ -11,9 +11,9 @@ function precompSwtAbbyy
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-dPath=globals;
+cfg=globals;
 
-tstDir=fullfile(dPath,'icdar','test');
+tstDir=fullfile(cfg.dPath,'icdar','test');
 abbyyDir=fullfile(tstDir,'abbyy','wordsSWTpad');
 d1=fullfile(tstDir,'res-swtPad','abbyy','images');
 if(~exist(d1,'dir')), mkdir(d1); end

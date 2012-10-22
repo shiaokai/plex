@@ -12,8 +12,8 @@ function genPrCurvesEZ
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-dPath=globals;
-RandStream.getDefaultStream.reset();
+cfg=globals;
+RandStream.getGlobalStream.reset();
 
 % testing conditions (ICDAR)
 % -- paramSet={result directory, with/without spell check (for OCR)}
@@ -26,11 +26,11 @@ RandStream.getDefaultStream.reset();
 
 % -- other settings (SVT)
 tstD='svt'; tstSpl='test'; lexD='lex';         
-plexD=fullfile(dPath,tstD,tstSpl,'EZ','plex+r','images');
+plexD=fullfile(cfg.dPath,tstD,tstSpl,'EZ','plex+r','images');
 paramSets={{plexD,0}};
 
 % lexicon folder
-lexDir=fullfile(dPath,tstD,tstSpl,lexD);
+lexDir=fullfile(cfg.dPath,tstD,tstSpl,lexD);
          
 pNms=struct('thr',-inf,'ovrDnm','min','overlap',.5); pNms.type='max';
 
@@ -42,11 +42,11 @@ set(gcf,'Position',[50 50 600 300]); hold on;
 xlabel('Recall','FontSize',16); ylabel('Precision','FontSize',16);
 
 % eval params
-iDir=fullfile(dPath,tstD,tstSpl,'images');
+iDir=fullfile(cfg.dPath,tstD,tstSpl,'images');
 evalPrm={'thr',.5,'imDir',iDir,'f0',1,'f1',inf,'lexDir',lexDir,...
   'pNms',pNms};
 
-gtDir=fullfile(dPath,tstD,tstSpl,'wordAnn');
+gtDir=fullfile(cfg.dPath,tstD,tstSpl,'wordAnn');
 
 % loop over each paramset and plot it on the same figure
 for p=1:length(paramSets)
