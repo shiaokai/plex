@@ -25,7 +25,7 @@ function [model,xmin,xmax,dtE]=trainRescore(dtw,dt,gtw,nFold,pNms,thr)
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-RandStream.setDefaultStream(RandStream('mrg32k3a', 'Seed', sum('iccv11')));
+RandStream.setGlobalStream(RandStream('mrg32k3a', 'Seed', sum('iccv11')));
 n=length(gtw); fld=randint2(n,1,[1 nFold]); x=cell(n,1); y=x;
  
 for k=1:n, y{k}=zeros(length(dtw{k}),1);

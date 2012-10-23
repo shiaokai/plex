@@ -16,9 +16,11 @@ clfPrms={'S',S,'M',M,'trnT',trnT,'bgDir',trnBg,'nBg',nBg,'nTrn',nTrn};
 cNm=cfg.chClfNm(clfPrms{:});
 
 % -- paramSet={dataset, test split, lexicon dir, results dir}
-paramSets={{'svt','test','lex',fullfile('res-synth')},...
-           {'icdar','test','lex50',fullfile('res-swtPad','res-synth')},...
-           {'icdar','test','lex50',fullfile('res-synth')}};
+% paramSets={{'svt','test','lex',fullfile('res-synth')},...
+%            {'icdar','test','lex50',fullfile('res-swtPad','res-synth')},...
+%            {'icdar','test','lex50',fullfile('res-synth')}};
+         
+paramSets={{'icdar','test','lex50',fullfile('res-synth')}};         
          
 nFold=5; evalThr=.5;
 pNms=struct('thr',-inf,'ovrDnm','min','overlap',.5);

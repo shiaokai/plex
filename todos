@@ -1,2 +1,15 @@
+ICDAR
+- [running] run using synth training to finish and repro results
+- separate char det from word det
+  - compute f-score at char level
+  - find a balance that is sensible for picking threshold
+  - store thresholds per character with classifier object
+  - run word det on chars after filtering w/ thresholds
+- repeat this for the icdar training
+- clean up scoring function to not use mysterious constant
+
+- [waiting on email] integrate Mishra's character bounding boxes to SVT
+
+
 
 
