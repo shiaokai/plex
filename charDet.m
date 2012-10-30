@@ -30,6 +30,7 @@ hImg=size(I,1); wImg=size(I,2); k=0;
 
 bbs=zeros(1e6,6); 
 minHP=minH*min(size(I,1),size(I,2)); maxHP=maxH*min(size(I,1),size(I,2));
+%minHP=minH*mean(size(I,1),size(I,2)); maxHP=maxH*mean(size(I,1),size(I,2));
 sStart=ceil(max(log(sz(1)/maxHP),log(sz(2)/wImg))/log(ss));
 sEnd=floor(log(sz(1)/minHP)/log(ss));
 for s=sStart:sEnd, r=ss^s;
@@ -46,14 +47,24 @@ function bbs=detect1(I,ferns,sz,sBin,oBin,thr)
 x=5*hogOld(single(I),sBin,oBin); xs=size(x); 
 %sz1=sz/sBin; % uncomment to use the updated HOG
 sz1=sz/sBin-2;
-x=fevalArrays(x,@im2col,sz1); if(ndims(x)==2),x=permute(x,[1 3 2]); end
+x=fevalArrays(x,@im2col,sz1); if(ismatrix(x)),x=permute(x,[1 3 2]); end
 x=permute(x,[1 3 2]); 
 x=reshape(x,[],size(x,3))';
 xinds=fernsInds(double(x),ferns.fids,ferns.thrs);
 [~,ph]=fernsClfApply([],ferns,xinds);
 ph=reshape(ph,xs(1)-sz1(1)+1,xs(2)-sz1(2)+1,[]);
 bbs=zeros(numel(ph),6);
+
+% old
 if(size(ph,3)==63), ph=bsxfun(@minus,ph(:,:,1:62),ph(:,:,63)); end
+
+%plot(sort(ph(:)));
+
+% new
+%phSum=repmat(sum(ph,3),[1,1,size(ph,3)]);
+%ph1=ph./phSum; % normalize all scores by sum
+%plot(sort(ph1(:)));
+%ph1=1-ph1;
 
 k=0; bbw=sz1(1)+2; bbh=sz1(2)+2;
 for j=1:size(ph,3), M=ph(:,:,j);

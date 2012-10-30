@@ -26,8 +26,8 @@ S=6; M=256; nTrn=Inf;
 %            {'synth','charHard','msrcBt',10000,'svt','train'},...
 %            {'icdar','charHard','icdarBt',10000,'svt','train'}};
          
-paramSets={{'synth','charHard','msrcBt',10000,'icdar','test'},...
-           {'synth','charHard','msrcBt',10000,'icdar','train'}};         
+paramSets={{'synth','charHard','msrcBt',10000,'svt','test'},...
+           {'synth','charHard','msrcBt',10000,'svt','train'}};         
          
 for p=1:length(paramSets)
   RandStream.getGlobalStream.reset();
@@ -63,11 +63,9 @@ for p=1:length(paramSets)
   if has_par
     if matlabpool('size')>0, matlabpool close; end
     matlabpool open
-    run_desc=evalc('disp(paramSet)');
     progress_file=[cfg.progress_prefix(),prm2str(paramSet)];
     if exist(progress_file,'file'); delete(progress_file); end
     system(['touch ', progress_file]);
-    system(['echo ''' run_desc ''' >> ' progress_file]);
     fprintf('Using Parfor in trainChClfs. Progress file here: %s',progress_file);
     ticId=[];
   else

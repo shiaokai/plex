@@ -24,18 +24,18 @@ cNm=cfg.chClfNm(clfPrms{:});
 % -- paramSet={result directory, with/without spell check (for OCR)}
 
 % -- other settings (SVT)
-% tstD='svt'; tstSpl='test'; lexD='lex';         
-% paramSets={{fullfile('res-synth',cNm),0},...
-%            {fullfile('res-synth-svm',cNm),0}};
+tstD='svt'; tstSpl='test'; lexD='lex';         
+paramSets={{fullfile('res-synth',cNm),0},...
+           {fullfile('res-synth-svm',cNm),0}};
 
 % -- settings when reproducing results
 % tstD='icdar'; tstSpl='test'; lexD='lex20'; % lex5, lex50
 % paramSets={{fullfile('res-swtPad','res-synth-svm',cNm),0},...
 %           {fullfile('res-synth-svm',cNm),0}};
 
-tstD='icdar'; tstSpl='test'; lexD='lex50'; % lex5, lex50
-paramSets={{fullfile('res-synth',cNm),0},...
-           {fullfile('res-synth-svm',cNm),0}};
+% tstD='icdar'; tstSpl='test'; lexD='lex50'; % lex5, lex50
+% paramSets={{fullfile('res-synth',cNm),0},...
+%            {fullfile('res-synth-svm',cNm),0}};
 
 % lexicon folder
 lexDir=fullfile(cfg.dPath,tstD,tstSpl,lexD);

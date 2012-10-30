@@ -1,4 +1,4 @@
-function [f,x,y,i]=Fscore(xs,ys)
+function [f,x,y,i]=Fscore(xs,ys,r_balance)
 % Compute F-score
 %
 % USAGE
@@ -19,6 +19,8 @@ function [f,x,y,i]=Fscore(xs,ys)
 %  Copyright notice: license.txt
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
-
-fs=1./(.5./xs+.5./ys);
+if nargin < 3
+  r_balance=.5;
+end
+fs=1./((1-r_balance)./xs+(r_balance)./ys);
 [f,i]=max(fs); x=xs(i); y=ys(i);

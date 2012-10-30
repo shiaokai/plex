@@ -59,9 +59,9 @@ lex=lex(1:n);
 end
 
 function [words, pictres] = plexApply(bbs, ch, lex, varargin)
-dfs={'alpha',.8,'radx',3,'rady',1,'rads',2,'cap',500,'mpw',5,...
+dfs={'alpha',.8,'radx',3,'rady',1,'rads',2,'shift',[0,500],'mpw',5,...
   'wthr',Inf,'wolap',.5,'timeout',120};
-[prm.alpha,prm.radx,prm.rady,prm.rads,prm.cap,prm.mpw,prm.wthr,prm.wolap,prm.timeout] = getPrmDflt(varargin,dfs,1);
+[prm.alpha,prm.radx,prm.rady,prm.rads,prm.shift,prm.mpw,prm.wthr,prm.wolap,prm.timeout] = getPrmDflt(varargin,dfs,1);
 
 tStart=tic;
 
@@ -108,7 +108,7 @@ for leafi=1:length(top.kids), leaf_t=top.kids(leafi);
         (chibbs(:,4)>=sRangeMin));
       minb=Inf; mini=1;
       for j=1:length(isectIdx), ic=isectIdx(j);
-        cost1=cost(chibbs(ic,:),parbb,prm.alpha,prm.cap);
+        cost1=cost(chibbs(ic,:),parbb,prm.alpha,prm.shift);
         if(cost1<minb), minb=cost1; mini=ic; end
       end
       Bval1(ip,1)=minb; Barg1(ip,1)=mini;
@@ -139,7 +139,7 @@ if(lex(chi_t).isWord),
   % find best root location
   rootlocs=zeros(size(rootbbs,1),1);
   for i=1:size(rootbbs,1)
-    rootbb=rootbbs(i,:); [~,u]=cost(rootbb,rootbb,0,prm.cap);
+    rootbb=rootbbs(i,:); [~,u]=cost(rootbb,rootbb,0,prm.shift);
     rootlocs(i)=prm.alpha*u+BvalC(i);
   end
   
@@ -173,7 +173,8 @@ if(lex(chi_t).isWord),
 
     words(end+1).word=lword; 
     words(end).bb=wbb;
-    words(end).bb(5)=pscore;
+    %words(end).bb(5)=pscore; %higher is worse
+    words(end).bb(5)=-pscore; %lower is worse
     words(end).bbs=cbbs;
 
     outwbbs=[outwbbs;wbb]; nwords=nwords+1;
@@ -209,7 +210,7 @@ for pari=1:length(lex(chi_t).kids), par_t=lex(chi_t).kids(pari);
     minb=Inf; mini=1;
     for j=1:length(isectIdx), ic=isectIdx(j);
       if(BvalC(ic)>minb), continue; end
-      cost1=cost(chibbs(ic,:),parbb,prm.alpha,prm.cap)+BvalC(ic);
+      cost1=cost(chibbs(ic,:),parbb,prm.alpha,prm.shift)+BvalC(ic);
       if(cost1<minb), minb=cost1; mini=ic; end        
     end
     Bval1(ip,1)=minb; Barg1(ip,1)=mini;
@@ -227,10 +228,11 @@ bb=[min(bbs(:,1)) min(bbs(:,2))...
 bb=[bb(1:2) bb(3:4)-bb(1:2)];
 end
 
-function [c,u,p]=cost(chibb,parbb,alpha,cap)
+function [c,u,p]=cost(chibb,parbb,alpha,shift)
 
-u = 1-chibb(5)/cap;
-
+%u = 1-chibb(5)/(shift(2)-shift(1));
+u = -chibb(5);
+%u = -chibb(5);
 % Costs
 % - horizontal distance: based on parent's BB
 % - vertical distance: same y-center is good
@@ -242,7 +244,6 @@ ycent=parbb(1,2)+.5*parbb(1,4);
 xdist=abs(chibb(1,1)-xcent)/min(chibb(1,3),parbb(1,3));
 if(chibb(1,1)<xcent),xdist=2*xdist; end
 ydist=abs((chibb(1,2)+.5*chibb(1,4))-ycent)/min(chibb(1,4),parbb(1,4));
-%sdist=1-min(chibb(1,1),parbb(1,1))/max(chibb(1,1),parbb(1,1));
 sdist=1-min(chibb(1,3),parbb(1,3))/max(chibb(1,3),parbb(1,3));
 p=xdist+2*ydist+sdist;
 c=alpha*u+(1-alpha)*p;

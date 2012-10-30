@@ -74,7 +74,7 @@ for i=1:n
   end
   
   % flip signs of word scores
-  for j=1:length(dt1), dt1(j).bb(:,5)=-dt1(j).bb(:,5); end
+  %for j=1:length(dt1), dt1(j).bb(:,5)=-dt1(j).bb(:,5); end
   
   % word nonmax suppr
   dt1=wordNms(dt1,pNms);

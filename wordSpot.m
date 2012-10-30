@@ -47,6 +47,8 @@ bbs=bbNms(bbs,nmsPrms);
 t2S=tic; words=wordDet('plexApply',bbs,cfg.ch1,lex,plxPrms); t2=toc(t2S);
 if ~isempty(wordSvm)
   % if available, score using SVM
+  %for i=1:length(words), words(i).bb(:,5)=-words(i).bb(:,5); end
   words=wordNms(words,wordSvm);
+  %for i=1:length(words), words(i).bb(:,5)=-words(i).bb(:,5); end
 end
 

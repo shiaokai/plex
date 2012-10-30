@@ -21,9 +21,11 @@ cFtr=cHogFtr;
 % Train character detectors specified in the param list
 % paramSet={train dataset,with/without neighboring chars,
 %           bg dataset,# bg images,bootstrap}
-paramSets={{'synth','charHard','msrc',5000,1},...
-           {'icdar','charHard','icdar',5000,1}};
+%paramSets={{'synth','charHard','msrc',5000,1},...
+%           {'icdar','charHard','icdar',5000,1}};
 
+paramSets={{'synth','charHard','msrc',5000,1}};
+         
 fprintf('Training character classifiers.\n');
 % Loop over param sets
 for p=1:length(paramSets)
@@ -75,11 +77,9 @@ for p=1:length(paramSets)
   if has_par
       if matlabpool('size')>0, matlabpool close; end
       matlabpool open
-      run_desc=evalc('disp(paramSet)');
-      progress_file=[cfg.progress_prefix(),prm2str(run_desc)];
+      progress_file=[cfg.progress_prefix(),prm2str(paramSet)];
       if exist(progress_file,'file'); delete(progress_file); end
       system(['touch ', progress_file]);
-      system(['echo ''' run_desc ''' >> ' progress_file]);
       fprintf('Using Parfor in trainChClfs. Progress file here: %s',progress_file);
       ticId=[];
   else
