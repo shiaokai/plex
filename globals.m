@@ -31,25 +31,17 @@ if isempty(v)
 end
 
 % run parameters
-cfg.train='synth';
-cfg.train_bg='msrc';
+cfg.train='icdar';
+cfg.train_bg='icdar';
+cfg.train_type='charHard';
 cfg.bootstrap=1;
 cfg.test='icdar'; cfg.lex='lex50'; cfg.lex0='lex0';
 %cfg.test='svt'; cfg.lex='lex'; cfg.lex0='lex';
 
-if 1
-  cfg.train_type='charHard';
-  cfg.n_train=Inf;
-  cfg.n_bg=5000;
-  cfg.max_bs=Inf;
-  cfg.max_tune_img=Inf;
-else % if debugging
-  cfg.train_type='charHard_shrunk';
-  cfg.n_train=100;
-  cfg.n_bg=100;
-  cfg.max_bs=5;
-  cfg.max_tune_img=10;
-end
+cfg.n_train=Inf;
+cfg.n_bg=5000;
+cfg.max_bs=Inf;
+cfg.max_tune_img=Inf;
 
 
 [~,hostname] = system('hostname');
@@ -88,6 +80,7 @@ cfg.has_par=has_par;
 cfg.progress_prefix=@create_progress_name;
 cfg.getName=@()getName(cfg);
 cfg.getClfPath=@()getClfPath(cfg);
+cfg.getWdClfPath=@()getWdClfPath(cfg);
 end
 
 function t=chClfNm1(varargin)
@@ -118,7 +111,12 @@ fname=sprintf('fern_inlineS%01iM%03itrnSet%strnT%sbgDir%snBg%inTrn%i',S,M,trnD,.
   trnT,bgD,nBg,nTrn);
 end
 
+function clfPath=getWdClfPath(cfg)
+cNm=cfg.getName();
+clfPath=fullfile(cfg.dPath,cfg.train,'clfs',[cNm,'_',cfg.test,'_wclf.mat']);
+end
+
 function clfPath=getClfPath(cfg)
 cNm=cfg.getName();
-clfPath=fullfile(cfg.dPath,cfg.train,[cNm,'.mat']);
+clfPath=fullfile(cfg.dPath,cfg.train,'clfs',[cNm,'.mat']);
 end

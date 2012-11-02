@@ -15,27 +15,33 @@ RandStream.getGlobalStream.reset();
 
 cfg=globals;
 
-if 0
+if 1
 % train initial classifier given configuration
-fModel=trainClassifier(cfg); save('dat_cache1','fModel');
+fModel=trainClassifier(cfg); 
+if ~exist(fileparts(cfg.getClfPath()),'dir'), 
+  mkdir(fileparts(cfg.getClfPath()));
+end
+save(cfg.getClfPath(),'fModel');
 else
-res=load('dat_cache1'); fModel=res.fModel;
+res=load(cfg.getClfPath()); fModel=res.fModel;
 end
 
-if 0
+if 1
 % tune classifier by discovering max and operating point  
-fModel=tuneDetector(cfg,fModel); save('dat_cache2','fModel');
+fModel=tuneDetector(cfg,fModel); 
+save(cfg.getClfPath(),'fModel');
 else
-res=load('dat_cache2'); fModel=res.fModel;
+res=load(cfg.getClfPath()); fModel=res.fModel;
 end
 
 if 1
 % cross validate on training data for word detection parameters
 alpha=crossValWordDP(cfg,fModel);
 % train word classifier using parameters
-wdClf=trainWordClassifier(cfg,fModel,alpha); save('dat_cache3','wdClf','alpha');
+wdClf=trainWordClassifier(cfg,fModel,alpha);
+save(cfg.getWdClfPath(),'wdClf','alpha');
 else
-res=load('dat_cache3'); wdClf=res.wdClf; alpha=res.alpha;
+res=load(cfg.getWdClfPath()); wdClf=res.wdClf; alpha=res.alpha;
 end
 
 if 1
@@ -215,6 +221,7 @@ parfor f=0:nImg-1
   t1S=tic; bbs=charDet(I,fModel,{}); t1=toc(t1S);  % character detection
   bbs(:,6)=equivClass(bbs(:,6),cfg.ch);  % upper and lower case are equivalent
   bbs=bbNms(bbs,cfg.dfNP);
+  if size(bbs,2)==5, bbs=zeros(0,6); end
   saveRes(sF,bbs,t1);
   
   if has_par
@@ -237,7 +244,7 @@ if ~exist(gtDir,'dir'), return; end
 
 % compute threshold for each class
 thrs=zeros(size(gt,2),1);
-ranges=zeros(size(gt,2),2);09
+ranges=zeros(size(gt,2),2);
 for i=1:size(gt,2)
   
   [xs,ys,sc]=bbGt('compRoc',gt(:,i),dt(:,i),0);
@@ -286,7 +293,7 @@ end
 % sweep over alpha
 best_alpha=0; best_fscore=0;
 %for alpha=.1:.1:.9
-sweep=1./fliplr(1:25:500);
+sweep=1./fliplr(linspace(1,500,50));
 for alpha=sweep
 
   % jump into extended for loop  
@@ -567,4 +574,5 @@ plot(xs,ys,'Color',rand(3,1),'LineWidth',3);
 lgs={sprintf('[%1.3f] thr=%1.3f',fs,sc(idx))};
 legend(lgs,'Location','SouthWest','FontSize',14);
 savefig(sprintf('%s_checkme',cfg.getName()),'pdf');
+save([cfg.getName(),'_result'],'xs','ys');
 end

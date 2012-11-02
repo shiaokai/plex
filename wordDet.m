@@ -60,7 +60,7 @@ end
 
 function [words, pictres] = plexApply(bbs, ch, lex, varargin)
 dfs={'alpha',.8,'radx',3,'rady',1,'rads',2,'shift',[0,500],'mpw',5,...
-  'wthr',Inf,'wolap',.5,'timeout',120};
+  'wthr',Inf,'wolap',.5,'timeout',180};
 [prm.alpha,prm.radx,prm.rady,prm.rads,prm.shift,prm.mpw,prm.wthr,prm.wolap,prm.timeout] = getPrmDflt(varargin,dfs,1);
 
 tStart=tic;
