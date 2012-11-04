@@ -1,4 +1,4 @@
-function runPipeline
+function runPipeline(params)
 % Run everything from scratch
 %
 % This function first trains FERNS using images for each character class
@@ -13,37 +13,41 @@ function runPipeline
 
 RandStream.getGlobalStream.reset();
 
-cfg=globals;
+cfg=globals(params);
 
-if 1
+if 0
   % train initial classifier given configuration
   fModel=trainClassifier(cfg);
 else
   res=load(cfg.getClfPath()); fModel=res.fModel;
 end
 
-if 1
+if 0
   evalCharClassifier(cfg,fModel);
 end
 
-if 1
+if 0
   % tune classifier by discovering max and operating point
   fModel=tuneDetector(cfg,fModel);
 else
   res=load(cfg.getClfPath()); fModel=res.fModel;
 end
 
-if 1
+if 0
   % cross validate on training data for word detection parameters
-  alpha=crossValWordDP(cfg,fModel);
+  alpha=crossValWordDP(cfg);
+else
+  res=load(cfg.getWdClfPath()); alpha=res.alpha;  
+end
+  
+if 0
   % train word classifier using parameters
   wdClf=trainWordClassifier(cfg,fModel,alpha);
-  save(cfg.getWdClfPath(),'wdClf','alpha');
 else
   res=load(cfg.getWdClfPath()); wdClf=res.wdClf; alpha=res.alpha;
 end
 
-if 1
+if 0
   % evaluate everything on test
   evalWordSpot(cfg,fModel,wdClf,alpha);
 end
@@ -281,26 +285,26 @@ if ~exist(gtDir,'dir'), return; end
 % compute threshold for each class
 thrs=zeros(size(gt,2),1);
 ranges=zeros(size(gt,2),2);
+fsc=zeros(size(gt,2),1);
 for i=1:size(gt,2)
-  
   [xs,ys,sc]=bbGt('compRoc',gt(:,i),dt(:,i),0);
-  [f,x,y,idx]=Fscore(xs,ys,.75); % .75 for recall
+  [f,x,y,idx]=Fscore(xs,ys,.5); % .75 for recall
+  fsc(i)=f;
   dt1=vertcat(dt{:,i});
   tpMean=mean(dt1(dt1(:,6)==1,5));
   fprintf('Char: %s, Fscore: %.03f: P:%.03f R:%.03f tpmean:%1.03f %d\n',...
     cfg.ch(i),f,x,y,tpMean,sc(idx));
-  %figure(1); clf; plot(xs,ys);
   thrs(i)=sc(idx);
   ranges(i,:)=[min(sc),max(sc)];
 end
 
-save(cfg.getClfPath(),'thrs','ranges','-append');
+save(cfg.getClfPath(),'fsc','thrs','ranges','-append');
 
 end
 
 % sweep alpha value for word detection, keep alpha that yields weighted
 % fscore
-function best_alpha=crossValWordDP(cfg,fModel)
+function alpha=crossValWordDP(cfg)
 
 fprintf('Eval word detector\n');
 
@@ -327,10 +331,9 @@ if has_par
 end
 
 % sweep over alpha
-best_alpha=0; best_fscore=0;
-%for alpha=.1:.1:.9
-sweep=1./fliplr(linspace(1,500,50));
-for alpha=sweep
+sweep=linspace(1/500,1/10,25);
+scores=zeros(length(sweep),1);
+for i=1:length(sweep), cur_alpha=sweep(i);
 
   % jump into extended for loop  
   if has_par
@@ -361,7 +364,7 @@ for alpha=sweep
     bbs=charCache.bbs;
     
     lex=wordDet('build',lex0);
-    t1S=tic; words=wordDet('plexApply',bbs,cfg.ch1,lex,{'alpha',alpha}); t1=toc(t1S);
+    t1S=tic; words=wordDet('plexApply',bbs,cfg.ch1,lex,{'alpha',cur_alpha}); t1=toc(t1S);
     % store result
     saveRes(sF,words);
     
@@ -382,8 +385,8 @@ for alpha=sweep
   
   % TP and FP margin
   tpSum=0; fpSum=0;
-  for i=1:size(dt,2)
-    dt1=dt{i};
+  for j=1:size(dt,2)
+    dt1=dt{j};
     tpSum = tpSum + sum(dt1(dt1(:,6)==1,5));
     fpSum = fpSum + sum(dt1(dt1(:,6)==0,5));
   end
@@ -398,15 +401,19 @@ for alpha=sweep
   
   [xs,ys,sc]=bbGt('compRoc',gt,dt,0);
   [f,x,y,idx]=Fscore(xs,ys,.75); % .75 for recall
-  fprintf('alpha = %f, Fscore= %f,\n',alpha, f);  
+  fprintf('alpha = %f, Fscore= %f,\n',cur_alpha, f);  
   
-  if f>best_fscore
-    best_fscore=f;
-    best_alpha=alpha;
-  end
+  scores(i)=f;
+  %if f>best_fscore
+  %  best_fscore=f;
+  %  best_alpha=alpha;
+  %end
 end
 
 if has_par, matlabpool close; end
+
+[~,idx]=max(scores); alpha=sweep(idx);
+save(cfg.getWdClfPath(),'alpha','sweep','scores');
 
 end
 
@@ -427,7 +434,6 @@ lexDir=fullfile(evalDir,cfg.lex);
 
 % set up output locations
 d1=fullfile(evalDir,['res-' trnD],cNm,'images');
-
   
 if(exist(d1,'dir')), rmdir(d1,'s'); end
 mkdir(d1);
@@ -437,9 +443,6 @@ nImg=length(dir(fullfile(evalDir,'wordAnn','*.txt')));
 nImg=min(nImg,cfg.max_tune_img);
 
 % jump into extended for loop
-%allwords=loadLex(evalDir);
-%lexAll=wordDet('build',allwords);
-
 has_par=cfg.has_par;
 if has_par
   if matlabpool('size')>0, matlabpool close; end
@@ -470,8 +473,7 @@ parfor f=0:nImg-1
   bbs=charCache.bbs;
     
   t1S=tic; 
-  %words=wordDet('plexApply',bbs,cfg.ch1,lex,{'alpha',alpha});
-  words=wordDet('plexApply',bbs,cfg.ch1,lex,{});
+  words=wordDet('plexApply',bbs,cfg.ch1,lex,{'alpha',alpha});
   t1=toc(t1S);
   saveRes(sF,words,t1);
   
@@ -503,6 +505,8 @@ pNms1.clf={xmin,xmax,model}; pNms1.type='none';
 
 wdClf=pNms1;
 
+save(cfg.getWdClfPath(),'wdClf','-append');
+  
 end
 
 % evaluate pipeline from all configs

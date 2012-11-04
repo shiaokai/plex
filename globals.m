@@ -1,4 +1,4 @@
-function cfg=globals
+function cfg=globals(params)
 % Global variables
 % 
 % USAGE
@@ -19,31 +19,48 @@ function cfg=globals
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-persistent v;
+%persistent v;
 persistent has_par;
+persistent train;
+persistent train_bg;
+persistent train_type;
+
+persistent test;
+persistent lex;
+persistent lex0;
+persistent test_type
 
 cfg = struct();
 
-% parfor check
-if isempty(v)
-    v=ver;
-    has_par=any(strcmp({v.Name},'Parallel Computing Toolbox'));
+% only set these values if param file is provided
+if nargin==1
+  P=params();
+  has_par=P.has_par;
+  train=P.train;
+  train_bg=P.train_bg;
+  train_type=P.train_type;  
+  test=P.test;
+  lex=P.lex;
+  lex0=P.lex0;
+  test_type=P.test_type;
 end
 
-% run parameters
-%cfg.train='icdar'; cfg.train_bg='icdar'; cfg.train_type='charHard';
-%cfg.train='synth'; cfg.train_bg='msrc'; cfg.train_type='charHard';
-cfg.train='synth1x'; cfg.train_bg='msrc'; cfg.train_type='char';
+cfg.train=train;
+cfg.train_bg=train_bg;
+cfg.train_type=train_type;
+
+cfg.test=test;
+cfg.lex=lex;
+cfg.lex0=lex0;
+cfg.test_type=test_type;
+
+cfg.has_par=has_par;
 
 cfg.bootstrap=1;
-cfg.test='icdar'; cfg.lex='lex50'; cfg.lex0='lex0'; cfg.test_type='charHard';
-%cfg.test='svt'; cfg.lex='lex'; cfg.lex0='lex'; cfg.test_type='charHard';
-
 cfg.n_train=Inf;
 cfg.n_bg=5000;
 cfg.max_bs=Inf;
 cfg.max_tune_img=Inf;
-
 
 [~,hostname] = system('hostname');
 hostname = strtrim(hostname);
@@ -83,7 +100,6 @@ cfg.chH=48;
 cfg.cFtr=@(I)reshape((5*hogOld(imResample(single(I),[cfg.chH,cfg.chH]),...
   cfg.sBin,cfg.oBin)),[],1);
 
-cfg.has_par=has_par;
 cfg.progress_prefix=@create_progress_name;
 cfg.getName=@()getName(cfg);
 cfg.getClfPath=@()getClfPath(cfg);
