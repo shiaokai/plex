@@ -49,7 +49,13 @@ hostname = strtrim(hostname);
 
 switch hostname
   case 'ballotscan'
-    cfg.dPath='/users/u1/kai/sharedata/plex/';
+    [~,uname]=system('whoami'); uname=strtrim(uname);
+    switch uname
+      case 'shiaokai'
+        cfg.dPath = '/data/text/plex/';
+      case 'kai'
+        cfg.dPath='/users/u1/kai/sharedata/plex/';
+    end
   case 'symmetry'
     cfg.dPath='/users/u1/kai/sharedata/plex/';
   otherwise
