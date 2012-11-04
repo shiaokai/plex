@@ -16,42 +16,41 @@ RandStream.getGlobalStream.reset();
 cfg=globals;
 
 if 1
-% train initial classifier given configuration
-fModel=trainClassifier(cfg); 
-if ~exist(fileparts(cfg.getClfPath()),'dir'), 
-  mkdir(fileparts(cfg.getClfPath()));
-end
-save(cfg.getClfPath(),'fModel');
+  % train initial classifier given configuration
+  fModel=trainClassifier(cfg);
 else
-res=load(cfg.getClfPath()); fModel=res.fModel;
+  res=load(cfg.getClfPath()); fModel=res.fModel;
 end
 
 if 1
-% tune classifier by discovering max and operating point  
-fModel=tuneDetector(cfg,fModel); 
-save(cfg.getClfPath(),'fModel');
+  evalCharClassifier(cfg,fModel);
+end
+
+if 1
+  % tune classifier by discovering max and operating point
+  fModel=tuneDetector(cfg,fModel);
 else
-res=load(cfg.getClfPath()); fModel=res.fModel;
+  res=load(cfg.getClfPath()); fModel=res.fModel;
 end
 
 if 1
-% cross validate on training data for word detection parameters
-alpha=crossValWordDP(cfg,fModel);
-% train word classifier using parameters
-wdClf=trainWordClassifier(cfg,fModel,alpha);
-save(cfg.getWdClfPath(),'wdClf','alpha');
+  % cross validate on training data for word detection parameters
+  alpha=crossValWordDP(cfg,fModel);
+  % train word classifier using parameters
+  wdClf=trainWordClassifier(cfg,fModel,alpha);
+  save(cfg.getWdClfPath(),'wdClf','alpha');
 else
-res=load(cfg.getWdClfPath()); wdClf=res.wdClf; alpha=res.alpha;
+  res=load(cfg.getWdClfPath()); wdClf=res.wdClf; alpha=res.alpha;
 end
 
 if 1
-% evaluate everything on test
-evaluation(cfg,fModel,wdClf,alpha);
+  % evaluate everything on test
+  evalWordSpot(cfg,fModel,wdClf,alpha);
 end
 
 if 1
-% produce PR curve
-genFigures(cfg);
+  % produce PR curve
+  genFigures(cfg);
 end
 
 end
@@ -80,7 +79,7 @@ newBg=[trnBg,'Bt'];
 x=fevalArrays(I,cFtr)';
 % train char classifier
 [ferns,yh]=fernsClfTrain(double(x),y,struct('S',S,'M',M,'thrr',thrr,'bayes',1));
-fprintf('training error=%f\n',mean(y~=yh));
+msg1=sprintf('training error=%f\n',mean(y~=yh));
 fModel=[]; fModel.ferns=ferns; fModel.sBin=sBin; fModel.oBin=oBin;
 fModel.chH=chH;
 
@@ -173,10 +172,47 @@ x=fevalArrays(I,cFtr)';
 % train char classifier
 RandStream.getGlobalStream.reset();
 [ferns,yh]=fernsClfTrain(double(x),y,struct('S',S,'M',M,'thrr',thrr,'bayes',1));
-fprintf('training error=%f\n',mean(y~=yh));
+msg2=sprintf('after mining negatives training error=%f\n',mean(y~=yh));
 if(~exist(cDir,'dir')),mkdir(cDir); end
 fModel=[]; fModel.ferns=ferns; fModel.sBin=sBin; fModel.oBin=oBin;
 fModel.chH=chH;
+
+% save stuff
+if ~exist(fileparts(cfg.getClfPath()),'dir'),
+  mkdir(fileparts(cfg.getClfPath()));
+end
+save(cfg.getClfPath(),'fModel','msg1','msg2');
+
+end
+
+
+% train character classifier from config
+function fModel=evalCharClassifier(cfg,fModel)
+
+% parameters that pretty much won't change
+% sBin=cfg.sBin; oBin=cfg.oBin; chH=cfg.chH;
+% S=cfg.S; M=cfg.M; thrr=[0 1]; nTrn=cfg.n_train;
+cFtr=cfg.cFtr;
+
+fprintf('Testing classifiers.\n');
+% Loop over param sets
+
+% load testing images
+[I,y]=readAllImgs(fullfile(cfg.dPath,cfg.test,'test',cfg.test_type),...
+  cfg.chC,Inf);
+x=fevalArrays(I,cFtr)';
+
+[yh,ph]=fernsClfApply(double(x),fModel.ferns); [~,yha]=sort(ph,2,'descend');
+[y1,~]=equivClass(y,cfg.ch); yh1=equivClass(yh,cfg.ch);
+yha1=equivClass(yha,cfg.ch);
+m=findRanks(y,yha); m1=findRanks(y1,yha1);
+msg3=sprintf('TRAIN:%s-%s TEST:%s-%s: top1 error = %f, top3 error = %f\n',...
+  cfg.train,cfg.train_type,cfg.test,cfg.test_type,mean(y~=yh), mean(m>3));
+msg4=sprintf('EQ:TRAIN:%s-%s TEST:%s-%s: top1 error = %f, top3 error = %f\n',...
+  cfg.train,cfg.train_type,cfg.test,cfg.test_type,mean(y1~=yh1), mean(m1>3));
+
+save(cfg.getClfPath(),'y','yh','y1','yh1','msg3','msg4','-append');
+
 end
 
 % tune character detector
@@ -257,8 +293,8 @@ for i=1:size(gt,2)
   thrs(i)=sc(idx);
   ranges(i,:)=[min(sc),max(sc)];
 end
-fModel.thrs=thrs;
-fModel.ranges=ranges;
+
+save(cfg.getClfPath(),'thrs','ranges','-append');
 
 end
 
@@ -392,7 +428,6 @@ lexDir=fullfile(evalDir,cfg.lex);
 % set up output locations
 d1=fullfile(evalDir,['res-' trnD],cNm,'images');
 
-if 1
   
 if(exist(d1,'dir')), rmdir(d1,'s'); end
 mkdir(d1);
@@ -450,7 +485,6 @@ parfor f=0:nImg-1
 end
 
 if has_par, matlabpool close; end
-end
 
 % train word svm  
 iDir=fullfile(evalDir,'images');
@@ -467,24 +501,12 @@ pNms1=pNms; pNms1.type='max';
 [model,xmin,xmax]=trainRescore(dtwT,dtT,gtwT,5,pNms1,.5);
 pNms1.clf={xmin,xmax,model}; pNms1.type='none';
 
-% % apply svm to re-score test set
-% files=dir(fullfile(gtDir,'*.txt')); files={files.name};
-% for i=1:length(files), fname=[files{i}(1:end-8),'.mat'];
-%   dtNm=fullfile(dtDir,fname);
-%   if(~exist(dtNm,'file')), dta=[]; else res=load(dtNm); dta=res.words; end
-%   % TODO: fix issue with signs of word scores (very confusing)
-%   for j=1:length(dta), dta(j).bb(:,5)=-dta(j).bb(:,5); end
-%   dta=wordNms(dta,pNms1);
-%   for j=1:length(dta), dta(j).bb(:,5)=-dta(j).bb(:,5); end
-%   saveRes(fullfile(outDir,fname),dta);
-% end
-
 wdClf=pNms1;
 
 end
 
 % evaluate pipeline from all configs
-function evaluation(cfg,fModel,wdClf,alpha)
+function evalWordSpot(cfg,fModel,wdClf,alpha)
 
 % run pipeline on test set
 
@@ -536,7 +558,6 @@ parfor f=0:nImg-1
 
   t3S=tic; 
   [words,t1,t2]=wordSpot(I,lexS,fModel,wdClf,{},{},{'alpha',alpha}); 
-  %[words,t1,t2]=wordSpot(I,lexS,fModel,wdClf); 
   t3=toc(t3S);
   saveRes(sF,words,t1,t2,t3);  
   
@@ -568,11 +589,10 @@ evalPrm={'thr',.5,'imDir',iDir,'f0',1,'f1',inf,'lexDir',lexDir,...
 
 [xs,ys,sc]=bbGt('compRoc', gt, dt, 0);
 [fs,~,~,idx]=Fscore(xs,ys);
-fs
 figure(1); clf;
 plot(xs,ys,'Color',rand(3,1),'LineWidth',3);
 lgs={sprintf('[%1.3f] thr=%1.3f',fs,sc(idx))};
 legend(lgs,'Location','SouthWest','FontSize',14);
-savefig(sprintf('%s_checkme',cfg.getName()),'pdf');
-save([cfg.getName(),'_result'],'xs','ys');
+savefig(sprintf('%s_wordSpotting',cfg.getName()),'pdf');
+save([cfg.getName(),'_result_wordSpotting'],'xs','ys');
 end

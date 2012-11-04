@@ -1,2 +1,5 @@
-.6208
+- output other benchmark statistics during runPipeline
+  - character classification
+  - character detection
+  
 
