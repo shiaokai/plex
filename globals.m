@@ -31,12 +31,13 @@ if isempty(v)
 end
 
 % run parameters
-cfg.train='icdar';
-cfg.train_bg='icdar';
-cfg.train_type='charHard';
+%cfg.train='icdar'; cfg.train_bg='icdar'; cfg.train_type='charHard';
+%cfg.train='synth'; cfg.train_bg='msrc'; cfg.train_type='charHard';
+cfg.train='synth1x'; cfg.train_bg='msrc'; cfg.train_type='char';
+
 cfg.bootstrap=1;
-cfg.test='icdar'; cfg.lex='lex50'; cfg.lex0='lex0';
-%cfg.test='svt'; cfg.lex='lex'; cfg.lex0='lex';
+cfg.test='icdar'; cfg.lex='lex50'; cfg.lex0='lex0'; cfg.test_type='charHard';
+%cfg.test='svt'; cfg.lex='lex'; cfg.lex0='lex'; cfg.test_type='charHard';
 
 cfg.n_train=Inf;
 cfg.n_bg=5000;
