@@ -15,7 +15,7 @@ RandStream.getGlobalStream.reset();
 
 cfg=globals(params);
 
-if 1
+if 0
   % train initial classifier given configuration
   fModel=trainClassifier(cfg);
 else
@@ -26,28 +26,28 @@ if 1
   evalCharClassifier(cfg,fModel);
 end
 
-if 1
+if 0
   % tune classifier by discovering max and operating point
   fModel=tuneDetector(cfg,fModel);
 else
   res=load(cfg.getClfPath()); fModel=res.fModel;
 end
 
-if 1
+if 0
   % cross validate on training data for word detection parameters
   alpha=crossValWordDP(cfg);
 else
   res=load(cfg.getWdClfPath()); alpha=res.alpha;  
 end
   
-if 1
+if 0
   % train word classifier using parameters
   wdClf=trainWordClassifier(cfg,fModel,alpha);
 else
   res=load(cfg.getWdClfPath()); wdClf=res.wdClf; alpha=res.alpha;
 end
 
-if 1
+if 0
   % evaluate everything on test
   evalWordSpot(cfg,fModel,wdClf,alpha);
 end
@@ -190,7 +190,7 @@ if(isempty(cfg.test_type)),
   y=[]; yh=[]; y1=[]; yh1=[];
   msg3='no char classification to compute';
   msg4='no char classification to compute';
-  save(cfg.getClfPath(),'y','yh','y1','yh1','msg3','msg4','-append');
+  save(cfg.resCharClf(),'y','yh','y1','yh1','msg3','msg4');
   return;
 end
 
@@ -212,7 +212,7 @@ msg3=sprintf('TRAIN:%s-%s TEST:%s-%s: top1 error = %f, top3 error = %f\n',...
 msg4=sprintf('EQ:TRAIN:%s-%s TEST:%s-%s: top1 error = %f, top3 error = %f\n',...
   cfg.train,cfg.train_type,cfg.test,cfg.test_type,mean(y1~=yh1), mean(m1>3));
 
-save(cfg.getClfPath(),'y','yh','y1','yh1','msg3','msg4','-append');
+save(cfg.resCharClf(),'y','yh','y1','yh1','msg3','msg4');
 
 end
 
@@ -288,7 +288,7 @@ for i=1:size(gt,2)
   ranges(i,:)=[min(sc),max(sc)];
 end
 
-save(cfg.getClfPath(),'fsc','thrs','ranges','-append');
+%save(cfg.getClfPath(),'fsc','thrs','ranges','-append');
 
 end
 
@@ -563,6 +563,6 @@ figure(1); clf;
 plot(xs,ys,'Color',rand(3,1),'LineWidth',3);
 lgs={sprintf('[%1.3f] thr=%1.3f',fs,sc(idx))};
 legend(lgs,'Location','SouthWest','FontSize',14);
-savefig(sprintf('%s_wordSpotting',cfg.getName()),'pdf');
-save([cfg.getName(),'_result_wordSpotting'],'xs','ys');
+savefig(cfg.resWordspot(),'pdf');
+save(cfg.resWordspot(),'xs','ys');
 end

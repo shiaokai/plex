@@ -70,12 +70,14 @@ switch hostname
     [~,uname]=system('whoami'); uname=strtrim(uname);
     switch uname
       case 'shiaokai'
-        cfg.dPath = '/data/text/plex/';
+        cfg.dPath='/data/text/plex/';
+        cfg.dBox='/home/shiaokai/Dropbox/res';
       case 'kai'
         cfg.dPath='/users/u1/kai/sharedata/plex/';
     end
   case 'symmetry'
     cfg.dPath='/home/shiaokai/data/';
+    cfg.dBox='/home/shiaokai/Dropbox/res';
   otherwise
     error('Need to fill this in on new machines!');
 end
@@ -104,6 +106,8 @@ cfg.progress_prefix=@create_progress_name;
 cfg.getName=@()getName(cfg);
 cfg.getClfPath=@()getClfPath(cfg);
 cfg.getWdClfPath=@()getWdClfPath(cfg);
+cfg.resCharClf=@()resCharClf(cfg);
+cfg.resWordspot=@()resWordspot(cfg);
 end
 
 function t=chClfNm1(varargin)
@@ -142,4 +146,14 @@ end
 function clfPath=getClfPath(cfg)
 cNm=cfg.getName();
 clfPath=fullfile(cfg.dPath,cfg.train,'clfs',[cNm,'.mat']);
+end
+
+function clfPath=resWordspot(cfg)
+%cNm=cfg.getName();
+clfPath=fullfile(cfg.dBox,[cfg.train,'_',cfg.test,'_wspot']);
+end
+
+function clfPath=resCharClf(cfg)
+%cNm=cfg.getName();
+clfPath=fullfile(cfg.dBox,[cfg.train,'_',cfg.test,'_charclf']);
 end
