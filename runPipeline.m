@@ -15,39 +15,39 @@ RandStream.getGlobalStream.reset();
 
 cfg=globals(params);
 
-if 0
+if 1
   % train initial classifier given configuration
   fModel=trainClassifier(cfg);
 else
   res=load(cfg.getClfPath()); fModel=res.fModel;
 end
 
-if 0
+if 1
   evalCharClassifier(cfg,fModel);
 end
 
-if 0
+if 1
   % tune classifier by discovering max and operating point
   fModel=tuneDetector(cfg,fModel);
 else
   res=load(cfg.getClfPath()); fModel=res.fModel;
 end
 
-if 0
+if 1
   % cross validate on training data for word detection parameters
   alpha=crossValWordDP(cfg);
 else
   res=load(cfg.getWdClfPath()); alpha=res.alpha;  
 end
   
-if 0
+if 1
   % train word classifier using parameters
   wdClf=trainWordClassifier(cfg,fModel,alpha);
 else
   res=load(cfg.getWdClfPath()); wdClf=res.wdClf; alpha=res.alpha;
 end
 
-if 0
+if 1
   % evaluate everything on test
   evalWordSpot(cfg,fModel,wdClf,alpha);
 end
@@ -93,7 +93,7 @@ if ~bs, return; end
 fullBgD=fullfile(cfg.dPath,trnBg,'train','charBg');
 fullNewBgD=fullfile(cfg.dPath,newBg,'train','charBg');
 if(exist(fullNewBgD,'dir')),
-  fprintf('Clearing out old hardnegative folder');
+  fprintf('Clearing out old hardnegative folder\n');
   rmdir(fullNewBgD,'s');
 end
 mkdir(fullNewBgD);
@@ -107,16 +107,14 @@ if ~isempty(filesAnn), filesAnn=filesAnn(1:min(length(filesAnn),cfg.max_bs)); en
 
 % jump into extended for loop
 has_par=cfg.has_par;
-if has_par
+progress_file=[cfg.progress_prefix(),cfg.train,'_',cfg.test];
+if exist(progress_file,'file'); delete(progress_file); end
+system(['touch ', progress_file]);
+fprintf('Progress file here: %s\n',progress_file);
+  
+if has_par,
   if matlabpool('size')>0, matlabpool close; end
   matlabpool open
-  progress_file=[cfg.progress_prefix(),cfg.train,'_',cfg.test];
-  if exist(progress_file,'file'); delete(progress_file); end
-  system(['touch ', progress_file]);
-  fprintf('Progress file here: %s\n',progress_file);
-  ticId=[];
-else
-  ticId=ticStatus('Mining hard negatives',1,30,1);
 end
 
 parfor f=1:length(files),
@@ -143,19 +141,13 @@ parfor f=1:length(files),
   
   imwrite2(P,size(P,4)>1,n_start+maxn*(f-1),fullNewBgD);
   t1=toc(t1S);
-  if has_par
-    dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
-    t = getCurrentTask();
-    system(['echo ''' num2str(t.ID) ' : ' dt ' : ' num2str(t1) ' : ' ...
-      files{f} ''' >> ' progress_file]);
-  else
-    tocStatus(ticId,f/length(files));
-  end
+  if has_par,t = getCurrentTask(); tStr=num2str(t.ID); else tStr=''; end
+  dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
+  system(['echo ''' tStr ' : ' dt ' : ' num2str(t1) ' : ' ...
+    files{f} ''' >> ' progress_file]);
 end
 
-if has_par
-  matlabpool close
-end
+if has_par, matlabpool close; end
 
 % squeeze image IDs
 files=dir(fullfile(fullNewBgD,'*png')); files = {files.name};

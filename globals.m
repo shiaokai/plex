@@ -75,7 +75,7 @@ switch hostname
         cfg.dPath='/users/u1/kai/sharedata/plex/';
     end
   case 'symmetry'
-    cfg.dPath='/users/u1/kai/sharedata/plex/';
+    cfg.dPath='/home/shiaokai/data/';
   otherwise
     error('Need to fill this in on new machines!');
 end
