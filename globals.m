@@ -107,6 +107,7 @@ cfg.getName=@()getName(cfg);
 cfg.getClfPath=@()getClfPath(cfg);
 cfg.getWdClfPath=@()getWdClfPath(cfg);
 cfg.resCharClf=@()resCharClf(cfg);
+cfg.resCharDet=@()resCharDet(cfg);
 cfg.resWordspot=@()resWordspot(cfg);
 end
 
@@ -156,4 +157,9 @@ end
 function clfPath=resCharClf(cfg)
 %cNm=cfg.getName();
 clfPath=fullfile(cfg.dBox,[cfg.train,'_',cfg.test,'_charclf']);
+end
+
+function clfPath=resCharDet(cfg)
+%cNm=cfg.getName();
+clfPath=fullfile(cfg.dBox,[cfg.train,'_',cfg.test,'_chardet']);
 end

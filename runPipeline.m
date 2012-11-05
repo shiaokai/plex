@@ -22,11 +22,11 @@ else
   res=load(cfg.getClfPath()); fModel=res.fModel;
 end
 
-if 1
+if 0
   evalCharClassifier(cfg,fModel);
 end
 
-if 0
+if 1
   % tune classifier by discovering max and operating point
   fModel=tuneDetector(cfg,fModel);
 else
@@ -52,7 +52,7 @@ if 0
   evalWordSpot(cfg,fModel,wdClf,alpha);
 end
 
-if 1
+if 0
   % produce PR curve
   genFigures(cfg);
 end
@@ -232,6 +232,8 @@ d1=fullfile(evalDir,['res-' trnD],cNm,'images-ch');
 nImg=length(dir(fullfile(evalDir,'wordAnn','*.txt')));
 nImg=min(nImg,cfg.max_tune_img);
 
+if 0
+
 if(exist(d1,'dir')), rmdir(d1,'s'); end
 mkdir(d1);
 saveRes=@(f,bbs,t1)save(f,'bbs','t1');
@@ -265,6 +267,8 @@ end
 
 if has_par, matlabpool close; end
 
+end
+
 % PR curves
 outDir=fullfile(cfg.dPath,cfg.test,'train',['res-',cfg.train],cNm,'images-ch');
 gtDir=fullfile(cfg.dPath,cfg.test,'train','charAnn');
@@ -278,7 +282,7 @@ ranges=zeros(size(gt,2),2);
 fsc=zeros(size(gt,2),1);
 for i=1:size(gt,2)
   [xs,ys,sc]=bbGt('compRoc',gt(:,i),dt(:,i),0);
-  [f,x,y,idx]=Fscore(xs,ys,.5); % .75 for recall
+  [f,x,y,idx]=Fscore(xs,ys,.5);
   fsc(i)=f;
   dt1=vertcat(dt{:,i});
   tpMean=mean(dt1(dt1(:,6)==1,5));
@@ -288,6 +292,7 @@ for i=1:size(gt,2)
   ranges(i,:)=[min(sc),max(sc)];
 end
 
+save(cfg.resCharDet(),'xs','ys','f');
 %save(cfg.getClfPath(),'fsc','thrs','ranges','-append');
 
 end
