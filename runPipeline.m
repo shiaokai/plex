@@ -75,7 +75,7 @@ nBg=cfg.n_bg; bs=cfg.bootstrap;
 
 clfPath=cfg.getClfPath();
 cDir=fileparts(clfPath);
-newBg=[trnBg,'Bt'];
+newBg=[cfg.train,trnBg,'Bt'];
 
 % load training images
 [I,y]=readAllImgs(fullfile(cfg.dPath,trnD,'train',trnT),cfg.chC,nTrn,...
