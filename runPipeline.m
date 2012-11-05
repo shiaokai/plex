@@ -280,10 +280,13 @@ if ~exist(gtDir,'dir'), return; end
 thrs=zeros(size(gt,2),1);
 ranges=zeros(size(gt,2),2);
 fsc=zeros(size(gt,2),1);
+xsys={};
 for i=1:size(gt,2)
   [xs,ys,sc]=bbGt('compRoc',gt(:,i),dt(:,i),0);
   [f,x,y,idx]=Fscore(xs,ys,.5);
   fsc(i)=f;
+  xsys{i,1}=xs;
+  xsys{i,2}=ys;
   dt1=vertcat(dt{:,i});
   tpMean=mean(dt1(dt1(:,6)==1,5));
   fprintf('Char: %s, Fscore: %.03f: P:%.03f R:%.03f tpmean:%1.03f %d\n',...
@@ -292,7 +295,7 @@ for i=1:size(gt,2)
   ranges(i,:)=[min(sc),max(sc)];
 end
 
-save(cfg.resCharDet(),'xs','ys','f');
+save(cfg.resCharDet(),'fsc');
 %save(cfg.getClfPath(),'fsc','thrs','ranges','-append');
 
 end

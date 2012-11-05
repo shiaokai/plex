@@ -2,7 +2,7 @@ function summarizeAllResults
 
 colors={'b','g','r','c','m','y','k','w'};
 
-test='svt'; % icdar or svt
+test='icdar'; % icdar or svt
 
 switch test
   case 'icdar'
@@ -46,7 +46,16 @@ switch test
     res=load(cfgSynth16x.resCharClf()); fprintf('%s\n',res.msg3);
     res=load(cfgSynth1000.resCharClf()); fprintf('%s\n',res.msg3);
     res=load(cfgIcdar.resCharClf()); fprintf('%s\n',res.msg3);
-        
+    
+    % char detection
+    res=load(cfgSynth1x.resCharDet());
+    res=load(cfgSynth2x.resCharDet());
+    res=load(cfgSynth4x.resCharDet());
+    res=load(cfgSynth8x.resCharDet());
+    res=load(cfgSynth16x.resCharDet());
+    res=load(cfgSynth1000.resCharDet());
+    res=load(cfgIcdar.resCharDet());
+    
   case 'svt'
     cfgIcdar=globals(TRAINicdar_TESTsvt_cfg);
     cfgSynth1x=globals(TRAINsynth1x_TESTsvt_cfg);
