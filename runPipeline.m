@@ -232,18 +232,15 @@ mkdir(d1);
 saveRes=@(f,bbs,t1)save(f,'bbs','t1');
 
 % jump into extended for loop
+progress_file=[cfg.progress_prefix(),cfg.train,'_',cfg.test];
+if exist(progress_file,'file'); delete(progress_file); end
+system(['touch ', progress_file]);
+fprintf('Progress file here: %s\n',progress_file);
+  
 has_par=cfg.has_par;
 if has_par
   if matlabpool('size')>0, matlabpool close; end
   matlabpool open
-  progress_file=[cfg.progress_prefix(),cfg.train,'_',cfg.test];
-  if exist(progress_file,'file'); delete(progress_file); end
-  system(['touch ', progress_file]);
-  fprintf('Progress file here: %s\n',progress_file);
-  ticId=[];
-else
-  progress_file='';
-  ticId=ticStatus('Running PLEX on full images',1,30,1);
 end
 
 parfor f=0:nImg-1
@@ -255,14 +252,10 @@ parfor f=0:nImg-1
   bbs=bbNms(bbs,cfg.dfNP);
   if size(bbs,2)==5, bbs=zeros(0,6); end
   saveRes(sF,bbs,t1);
-  
-  if has_par
-    dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
-    t = getCurrentTask();
-    system(['echo '''  num2str(t.ID) ' : ' dt ' : ' num2str(t1) ' : ' sF ''' >> ' progress_file]);
-  else
-    tocStatus(ticId,f/nImg);
-  end  
+
+  if has_par,t = getCurrentTask(); tStr=num2str(t.ID); else tStr=''; end
+  dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
+  system(['echo '''  tStr ' : ' dt ' : ' num2str(t1) ' : ' sF ''' >> ' progress_file]);
 end
 
 if has_par, matlabpool close; end
@@ -327,18 +320,11 @@ sweep=linspace(1/500,1/10,25);
 scores=zeros(length(sweep),1);
 for i=1:length(sweep), cur_alpha=sweep(i);
 
-  % jump into extended for loop  
-  if has_par
-    progress_file=[cfg.progress_prefix(),cfg.train,'_',cfg.test];
-    if exist(progress_file,'file'); delete(progress_file); end
-    system(['touch ', progress_file]);
-    fprintf('Progress file here: %s\n',progress_file);
-    ticId=[];
-  else
-    progress_file='';
-    ticId=ticStatus('Running PLEX on full images',1,30,1);
-  end
-  
+  progress_file=[cfg.progress_prefix(),cfg.train,'_',cfg.test];
+  if exist(progress_file,'file'); delete(progress_file); end
+  system(['touch ', progress_file]);
+  fprintf('Progress file here: %s\n',progress_file);
+    
   parfor f=0:nImg-1
     sF=fullfile(d1,sprintf('I%05d.mat',f));
     
@@ -360,13 +346,10 @@ for i=1:length(sweep), cur_alpha=sweep(i);
     % store result
     saveRes(sF,words);
     
-    if has_par
-      dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
-      t = getCurrentTask();
-      system(['echo ''' num2str(t.ID) ' : ' dt ' : ' num2str(t1) ' : ' sF ''' >> ' progress_file]);
-    else
-      tocStatus(ticId,f/nImg);
-    end
+    if has_par,t=getCurrentTask(); tStr=num2str(t.ID); else tStr=''; end
+    dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
+    system(['echo ''' tStr ' : ' dt ' : ' num2str(t1) ' : ' sF ''' >> ' progress_file]);
+
   end
   
   iDir=fullfile(evalDir,'images');
@@ -435,18 +418,15 @@ nImg=length(dir(fullfile(evalDir,'wordAnn','*.txt')));
 nImg=min(nImg,cfg.max_tune_img);
 
 % jump into extended for loop
+progress_file=[cfg.progress_prefix(),cfg.train,'_',cfg.test];
+if exist(progress_file,'file'); delete(progress_file); end
+system(['touch ', progress_file]);
+fprintf('Progress file here: %s\n',progress_file);
+  
 has_par=cfg.has_par;
 if has_par
   if matlabpool('size')>0, matlabpool close; end
   matlabpool open
-  progress_file=[cfg.progress_prefix(),cfg.train,'_',cfg.test];
-  if exist(progress_file,'file'); delete(progress_file); end
-  system(['touch ', progress_file]);
-  fprintf('Progress file here: %s\n',progress_file);
-  ticId=[];
-else
-  progress_file='';
-  ticId=ticStatus('Running PLEX on full images',1,30,1);
 end
 
 parfor f=0:nImg-1
@@ -469,13 +449,9 @@ parfor f=0:nImg-1
   t1=toc(t1S);
   saveRes(sF,words,t1);
   
-  if has_par
-    dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
-    t = getCurrentTask();
-    system(['echo ''' num2str(t.ID) ' : ' dt ' : ' num2str(t1) ' : ' sF ''' >> ' progress_file]);
-  else
-    tocStatus(ticId,f/nImg);
-  end  
+  if has_par,t=getCurrentTask(); tStr=num2str(t.ID); else tStr=''; end
+  dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
+  system(['echo ''' tStr ' : ' dt ' : ' num2str(t1) ' : ' sF ''' >> ' progress_file]);
 end
 
 if has_par, matlabpool close; end
@@ -525,18 +501,15 @@ nImg=length(dir(fullfile(evalDir,'wordAnn','*.txt')));
 nImg=min(nImg,cfg.max_tune_img);
 
 % jump into extended for loop
+progress_file=[cfg.progress_prefix(),cfg.train,'_',cfg.test];
+if exist(progress_file,'file'); delete(progress_file); end
+system(['touch ', progress_file]);
+fprintf('Progress file here: %s\n',progress_file);
+  
 has_par=cfg.has_par;
 if has_par
   if matlabpool('size')>0, matlabpool close; end
   matlabpool open
-  progress_file=[cfg.progress_prefix(),cfg.train,'_',cfg.test];
-  if exist(progress_file,'file'); delete(progress_file); end
-  system(['touch ', progress_file]);
-  fprintf('Progress file here: %s\n',progress_file);
-  ticId=[];
-else
-  progress_file='';
-  ticId=ticStatus('Running PLEX on full images',1,30,1);
 end
 
 parfor f=0:nImg-1
@@ -557,13 +530,9 @@ parfor f=0:nImg-1
   t3=toc(t3S);
   saveRes(sF,words,t1,t2,t3);  
   
-  if has_par
-    t = getCurrentTask();
-    dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
-    system(['echo ''' num2str(t.ID) ' : ' dt ' : ' num2str(t1) ' : ' sF ''' >> ' progress_file]);
-  else
-    tocStatus(ticId,f/nImg);
-  end  
+  if has_par,t=getCurrentTask(); tStr=num2str(t.ID); else tStr=''; end
+  dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
+  system(['echo ''' tStr ' : ' dt ' : ' num2str(t1) ' : ' sF ''' >> ' progress_file]);
 end
 
 if has_par, matlabpool close; end
