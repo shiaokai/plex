@@ -185,13 +185,18 @@ end
 % train character classifier from config
 function fModel=evalCharClassifier(cfg,fModel)
 
-% parameters that pretty much won't change
-% sBin=cfg.sBin; oBin=cfg.oBin; chH=cfg.chH;
-% S=cfg.S; M=cfg.M; thrr=[0 1]; nTrn=cfg.n_train;
+% check if this test set has any characters to benchmark
+if(isempty(cfg.test_type)),
+  y=[]; yh=[]; y1=[]; yh1=[];
+  msg3='no char classification to compute';
+  msg4='no char classification to compute';
+  save(cfg.getClfPath(),'y','yh','y1','yh1','msg3','msg4','-append');
+  return;
+end
+
 cFtr=cfg.cFtr;
 
 fprintf('Testing classifiers.\n');
-% Loop over param sets
 
 % load testing images
 [I,y]=readAllImgs(fullfile(cfg.dPath,cfg.test,'test',cfg.test_type),...
