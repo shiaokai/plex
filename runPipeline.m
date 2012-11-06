@@ -232,8 +232,6 @@ d1=fullfile(evalDir,['res-' trnD],cNm,'images-ch');
 nImg=length(dir(fullfile(evalDir,'wordAnn','*.txt')));
 nImg=min(nImg,cfg.max_tune_img);
 
-if 0
-
 if(exist(d1,'dir')), rmdir(d1,'s'); end
 mkdir(d1);
 saveRes=@(f,bbs,t1)save(f,'bbs','t1');
@@ -266,8 +264,6 @@ parfor f=0:nImg-1
 end
 
 if has_par, matlabpool close; end
-
-end
 
 % PR curves
 outDir=fullfile(cfg.dPath,cfg.test,'train',['res-',cfg.train],cNm,'images-ch');
