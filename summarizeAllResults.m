@@ -2,7 +2,7 @@ function summarizeAllResults
 
 colors={'b','g','r','c','m','y','k','w'};
 
-test='icdar'; % icdar or svt
+test='svt'; % icdar or svt
 
 switch test
   case 'icdar'
@@ -48,13 +48,18 @@ switch test
     res=load(cfgIcdar.resCharClf()); fprintf('%s\n',res.msg3);
     
     % char detection
-    res=load(cfgSynth1x.resCharDet());
-    res=load(cfgSynth2x.resCharDet());
-    res=load(cfgSynth4x.resCharDet());
-    res=load(cfgSynth8x.resCharDet());
-    res=load(cfgSynth16x.resCharDet());
-    res=load(cfgSynth1000.resCharDet());
-    res=load(cfgIcdar.resCharDet());
+    FS=zeros(7,36);
+    res=load(cfgSynth1x.resCharDet()); FS(1,:)=res.fsc;
+    res=load(cfgSynth2x.resCharDet()); FS(2,:)=res.fsc;
+    res=load(cfgSynth4x.resCharDet()); FS(3,:)=res.fsc;
+    res=load(cfgSynth8x.resCharDet()); FS(4,:)=res.fsc;
+    res=load(cfgSynth16x.resCharDet()); FS(5,:)=res.fsc;
+    res=load(cfgSynth1000.resCharDet()); FS(6,:)=res.fsc;
+    res=load(cfgIcdar.resCharDet()); FS(7,:)=res.fsc;
+    
+    figure(2); clf; bar(FS','grouped'); 
+    title('Fscores at 0.5 for character detection');
+    legend({'1x','2x','4x','8x','16x','1000','Icd'});
     
   case 'svt'
     cfgIcdar=globals(TRAINicdar_TESTsvt_cfg);

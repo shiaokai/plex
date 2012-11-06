@@ -15,14 +15,14 @@ RandStream.getGlobalStream.reset();
 
 cfg=globals(params);
 
-if 0
+if 1
   % train initial classifier given configuration
   fModel=trainClassifier(cfg);
 else
   res=load(cfg.getClfPath()); fModel=res.fModel;
 end
 
-if 0
+if 1
   evalCharClassifier(cfg,fModel);
 end
 
@@ -33,26 +33,26 @@ else
   res=load(cfg.getClfPath()); fModel=res.fModel;
 end
 
-if 0
+if 1
   % cross validate on training data for word detection parameters
   alpha=crossValWordDP(cfg);
 else
   res=load(cfg.getWdClfPath()); alpha=res.alpha;  
 end
   
-if 0
+if 1
   % train word classifier using parameters
   wdClf=trainWordClassifier(cfg,fModel,alpha);
 else
   res=load(cfg.getWdClfPath()); wdClf=res.wdClf; alpha=res.alpha;
 end
 
-if 0
+if 1
   % evaluate everything on test
   evalWordSpot(cfg,fModel,wdClf,alpha);
 end
 
-if 0
+if 1
   % produce PR curve
   genFigures(cfg);
 end
