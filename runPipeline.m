@@ -15,11 +15,10 @@ RandStream.getGlobalStream.reset();
 
 cfg=globals(params);
 
-if 1
-  % train initial classifier given configuration
-  fModel=trainClassifier(cfg);
-else
+if(exist(cfg.getClfPath(),'file'))
   res=load(cfg.getClfPath()); fModel=res.fModel;
+else
+  fModel=trainClassifier(cfg);
 end
 
 if 1
@@ -28,9 +27,7 @@ end
 
 if 1
   % tune classifier by discovering max and operating point
-  fModel=tuneDetector(cfg,fModel);
-else
-  res=load(cfg.getClfPath()); fModel=res.fModel;
+  evalCharDetector(cfg,fModel);
 end
 
 if 1
@@ -216,8 +213,8 @@ save(cfg.resCharClf(),'y','yh','y1','yh1','msg3','msg4');
 
 end
 
-% tune character detector
-function fModel=tuneDetector(cfg,fModel)
+% evaluate character detector
+function fModel=evalCharDetector(cfg,fModel)
 
 fprintf('Eval character detector.\n');
 trnD=cfg.train;
@@ -275,14 +272,14 @@ if ~exist(gtDir,'dir'), return; end
 % compute threshold for each class
 thrs=zeros(size(gt,2),1);
 ranges=zeros(size(gt,2),2);
-fsc=zeros(size(gt,2),1);
-xsys={};
+fsc50=zeros(size(gt,2),1);
+fsc75=zeros(size(gt,2),1);
 for i=1:size(gt,2)
   [xs,ys,sc]=bbGt('compRoc',gt(:,i),dt(:,i),0);
+  [f,x,y,idx]=Fscore(xs,ys,.75);
+  fsc75(i)=f;
   [f,x,y,idx]=Fscore(xs,ys,.5);
-  fsc(i)=f;
-  xsys{i,1}=xs;
-  xsys{i,2}=ys;
+  fsc50(i)=f;
   dt1=vertcat(dt{:,i});
   tpMean=mean(dt1(dt1(:,6)==1,5));
   fprintf('Char: %s, Fscore: %.03f: P:%.03f R:%.03f tpmean:%1.03f %d\n',...
@@ -291,8 +288,7 @@ for i=1:size(gt,2)
   ranges(i,:)=[min(sc),max(sc)];
 end
 
-save(cfg.resCharDet(),'fsc');
-%save(cfg.getClfPath(),'fsc','thrs','ranges','-append');
+save(cfg.resCharDet(),'fsc50','fsc75');
 
 end
 
@@ -388,10 +384,6 @@ for i=1:length(sweep), cur_alpha=sweep(i);
   fprintf('alpha = %f, Fscore= %f,\n',cur_alpha, f);  
   
   scores(i)=f;
-  %if f>best_fscore
-  %  best_fscore=f;
-  %  best_alpha=alpha;
-  %end
 end
 
 if has_par, matlabpool close; end

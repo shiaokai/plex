@@ -150,16 +150,13 @@ clfPath=fullfile(cfg.dPath,cfg.train,'clfs',[cNm,'.mat']);
 end
 
 function clfPath=resWordspot(cfg)
-%cNm=cfg.getName();
-clfPath=fullfile(cfg.dBox,[cfg.train,'_',cfg.test,'_wspot']);
+clfPath=fullfile(cfg.dBox,[cfg.train,cfg.train_type,'_',cfg.test,'_wspot']);
 end
 
 function clfPath=resCharClf(cfg)
-%cNm=cfg.getName();
-clfPath=fullfile(cfg.dBox,[cfg.train,'_',cfg.test,'_charclf']);
+clfPath=fullfile(cfg.dBox,[cfg.train,cfg.train_type,'_',cfg.test,'_charclf']);
 end
 
 function clfPath=resCharDet(cfg)
-%cNm=cfg.getName();
-clfPath=fullfile(cfg.dBox,[cfg.train,'_',cfg.test,'_chardet']);
+clfPath=fullfile(cfg.dBox,[cfg.train,cfg.train_type,'_',cfg.test,'_chardet']);
 end
