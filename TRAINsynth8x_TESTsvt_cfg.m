@@ -1,7 +1,7 @@
-function cfg=TRAINsynth1x_TESTsvt_cfg
+function cfg=TRAINsynth8x_TESTsvt_cfg
 
 cfg=struct();
-cfg.train='synth1x';
+cfg.train='synth8x';
 cfg.train_bg='msrc';
 cfg.train_type='char';
 

@@ -1,4 +1,4 @@
-function cfg=TRAINsynth1000_TESTicdar_cfg
+function cfg=TRAINsynth1000_TESTsvt_cfg
 
 cfg=struct();
 cfg.train='synth1000';
