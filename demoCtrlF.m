@@ -11,8 +11,9 @@ function demoCtrlF
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
 %I=imread(fullfile('data','demo.jpg'));
-%I=imread(fullfile('data','bug2.jpg'));
-I=imread(fullfile('data','bug5.jpg'));
+%I=imread(fullfile('data','bug2.JPG'));
+%I=imread(fullfile('data','bug5.jpg'));
+I=imread(fullfile('data','01_09.jpg'));
 % crop bounding box
 im(I); drawnow;
 [X,Y]=ginput(2); X=round(X); Y=round(Y);
@@ -67,7 +68,10 @@ while 1
     % initially show top word with a border; all others just a light bg
     for i=1:length(words)
       bb=words(i).bb;
-      bbApply('draw',bb,[0,.75,0]);
+      minY=bb(2); maxY=bb(2)+bb(4);
+      minX=bb(1); maxX=bb(1)+bb(3);
+      patch([minX,minX,maxX,maxX],[minY,maxY,maxY,minY],...
+        'b','FaceAlpha',.1,'EdgeAlpha',.075);
     end
     
     idx=mod(counter,length(words))+1;
