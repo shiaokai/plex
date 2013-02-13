@@ -24,7 +24,6 @@ function varargout = wordDet( action, varargin )
 %   .radx     - [5] range of x-values to consider
 %   .rady     - [2] range of y-values to consider
 %   .rads     - [2.5] range of scale to consider
-%   .cap      - [500] normalization for fern scores
 %   .mpw      - [1] max detections per word
 %   .wthr     - [Inf] word score threshold
 %   .wolap    - [.5] overlap threshold when returning >1 detections/word

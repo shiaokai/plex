@@ -1,1 +1,28 @@
+ CTRL-F for images
+- matlab prototype
+  - 0. chardet phase
+  - 1. textinput box
+  - 2. worddet phase
+       - tab to scroll to next word box
+       - enter to accept
+  - 3. display final result with image + bbs
 
+
+MILESTONE 1.
+- UI to enter word with number box
+  after hitting enter, display words highlighted; and one w/ a border
+  tab to scroll through
+
+=====
+replacing Ferns with SVM
+
+phase 1:
+- new charDet to use an SVM to produce BBs
+- keep the same cross val infrastructure
+- issues
+  - still require a threshold for rejecting bbs
+
+phase 2:
+- charDet instead produces heatmaps w/o bbs
+  - Ferns can already do it
+  - 

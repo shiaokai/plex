@@ -52,6 +52,10 @@ else
   wbb1=reshape([words.bb],5,[])';
   outWords=words(wbb1(:,5)>thr);
 end
+
+% sort in descending order
+[~,idxs]=sort(wbb1(:,5),'descend');
+outWords=outWords(idxs);
 end
 
 function [kp,rat]=nms1(bbs,overlap,ovrDnm,greedy)

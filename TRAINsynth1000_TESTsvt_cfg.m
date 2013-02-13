@@ -10,4 +10,4 @@ cfg.lex='lex';
 cfg.lex0='lex';
 cfg.test_type='';
 
-cfg.has_par=0;
+cfg.has_par=1;
