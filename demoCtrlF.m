@@ -23,11 +23,13 @@ I=I(min(Y):max(Y),min(X):max(X),:);
 % Load classifiers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % character fern
-clfPath='/data/text/plex/synth1000/clfs/fern_inlineS6M256trnSetsynth1000trnTcharbgDirmsrcnBg5000nTrnInf.mat';
+%clfPath='/data/text/plex/synth1000/clfs/fern_inlineS6M256trnSetsynth1000trnTcharbgDirmsrcnBg5000nTrnInf.mat';
+clfPath=fullfile('data','fern_synth.mat');
 if(~exist(clfPath,'file')), error('FERN DOES NOT EXIST?!\n'); end
 dat=load(clfPath); fModel=dat.fModel;
 % word svm
-svmPath='/data/text/plex/synth1000/clfs/fern_inlineS6M256trnSetsynth1000trnTcharbgDirmsrcnBg5000nTrnInf_svt_wclf.mat';
+%svmPath='/data/text/plex/synth1000/clfs/fern_inlineS6M256trnSetsynth1000trnTcharbgDirmsrcnBg5000nTrnInf_svt_wclf.mat';
+svmPath=fullfile('data','svm_svt.mat');
 if(~exist(svmPath,'file')), error('SVM MODEL DOES NOT EXIST?!\n'); end
 dat=load(svmPath); wdClf=dat.wdClf; alpha=dat.alpha; wdClf.thr=-Inf;
 
