@@ -24,67 +24,65 @@ def ImgsToFeats(I):
         feats[:,i]=feature_vector[:,0]
     return feats
 
-def ReadImages(base_p,n):
+def ReadAllImages(base_dir,char_classes,max_per_class):#,bg_dir,max_for_bg):
     # implement 'n'
     # walk directory and load in n images
-    files = os.walk(base_p)
     imgs=np.zeros(0)
+    labels=np.zeros(0)
     k = 0
-    for root, dirs, files in os.walk(base_p):
-        for name in files:
-            p1,ext=os.path.splitext(name)
-            if ext!='.png':
-                continue
-            I = cv2.imread(os.path.join(base_p,name))
-            if imgs.shape[0]==0:
-                imgs=np.zeros((I.shape[0],I.shape[1],I.shape[2],1e4),dtype=np.uint8)
-            imgs[:,:,:,k]=I
-            k+=1
+    max_allocate=5e4
+    for class_index in range(len(char_classes)):
+        cur_class = char_classes[class_index]
+        if cur_class.islower():
+            # lowercase have minus
+            cur_class='-'+cur_class
+        imgs_dir = os.path.join(base_dir,cur_class)
+        for root, dirs, files in os.walk(imgs_dir):
+            for name in files:
+                p1,ext=os.path.splitext(name)
+                if ext!='.png':
+                    continue
+                I = cv2.imread(os.path.join(imgs_dir,name))
+                if imgs.shape[0]==0:
+                    imgs=np.zeros((I.shape[0],I.shape[1],I.shape[2],max_allocate),
+                                  dtype=np.uint8)
+                if k<max_allocate:
+                    imgs[:,:,:,k]=I
+                else:
+                    print 'WARNING: loading more data than max_allocate. do something!'
+                    imgs=np.concatenate((imgs,I[...,np.newaxis]),axis=3)
+
+                labels=np.append(labels,class_index)
+                k+=1
+
+    print 'Final k = %i', k
     imgs=imgs[:,:,:,0:k]
-    return imgs
+    return (imgs,labels)
 
-# 1. define paths to classes
-c1_base='/data/text/plex/synth1000/train/char/A'
-c2_base='/data/text/plex/synth1000/train/char/B'
-c3_base='/data/text/plex/synth1000/train/char/C'
 
-# 2. read images
-c1_imgs=ReadImages(c1_base,100)
-c2_imgs=ReadImages(c2_base,100)
-c3_imgs=ReadImages(c3_base,100)
-
-# 3. extract features
-c1_feats=ImgsToFeats(c1_imgs)
-c2_feats=ImgsToFeats(c2_imgs)
-c3_feats=ImgsToFeats(c3_imgs)
-
-# 4. concatenate into a single (X,y)
-
-X=np.transpose(np.hstack((c1_feats,c2_feats,c2_feats)))
-y=np.vstack((1*np.ones((c1_feats.shape[1],1)),
-             2*np.ones((c2_feats.shape[1],1)),
-             3*np.ones((c3_feats.shape[1],1))))
+alphabet='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+# read images
+(imgs_train,y_train)=ReadAllImages('/data/text/plex/icdar/train/charHard',alphabet,np.inf)
+(imgs_test,y_test)=ReadAllImages('/data/text/plex/icdar/test/charHard',alphabet,np.inf)
+# extract features
+X_train=np.transpose(ImgsToFeats(imgs_train)).astype(np.double)
+y_train = y_train.astype(np.double)
+X_test=np.transpose(ImgsToFeats(imgs_test)).astype(np.double)
+y_test = y_test.astype(np.double)
 
 # 3. train
 # Define training and testing sets
-inds = arange(X.shape[1])
-test_i = random.sample(xrange(len(inds)), int(0.95*len(inds)))
-train_i = np.delete(inds, test_i)
-
-X_train = X[train_i].astype(np.double)
-y_train = np.squeeze(y[train_i].astype(np.double))
-
-X_test = X[test_i].astype(np.double)
-y_test = np.squeeze(y[test_i].astype(np.double))
 t1 = time()
-rf = RandomForestClassifier(n_estimators=10, n_jobs=1)
+rf = RandomForestClassifier(n_estimators=50)
+# n_estimators=100 and 'entropy' gives 60% accuracy
+rf = RandomForestClassifier(n_estimators=50)
 rf.fit(X_train, y_train)
 tTrain = time()
 time_train=tTrain-t1
 
 t2 = time()
-#score = rf.score(X_test, y_test)
 score = rf.score(X_test, y_test)
+pb = rf.predict_proba(X_test)
 tTest = time()
 time_test = tTest-t2
 print 'train time: ', time_train
