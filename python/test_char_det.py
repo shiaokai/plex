@@ -1,3 +1,5 @@
+import settings
+
 import pdb
 import os
 import random
@@ -9,7 +11,7 @@ import cProfile
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from hog_utils import draw_hog, ReshapeHog
-
+from nms import BbsNms, HogResponseNms
 from time import time
 from sklearn.ensemble import RandomForestClassifier
 
@@ -67,159 +69,12 @@ def DrawCharBbs(I, bbs, alphabet, filter_label=-1, draw_top=-1):
                          backgroundcolor=(1,1,1))
 
 
-def BbsNms(bbs, overlap_thr = 0, separate = True):
-    '''
-    NMS over bounding box list
-    '''
-
-    # sort bbs by score
-    sidx = np.argsort(bbs[:,4])
-    sidx = sidx[::-1]
-    bbs = bbs[sidx,:]
-
-    keep = [True]* bbs.shape[0]
-    bbs_areas = bbs[:,2] * bbs[:,3]
-
-    bbs_start_y = bbs[:,0]
-    bbs_start_x = bbs[:,1]
-    bbs_end_y = bbs[:,0] + bbs[:,2]
-    bbs_end_x = bbs[:,1] + bbs[:,3]
-
-    # start at highest scoring bb    
-    for i in range(bbs.shape[0]):
-        cur_class = -1
-        if not(keep[i]):
-            continue
-        if separate:
-            cur_class = bbs[i,5]
-        for jj in range(i+1, bbs.shape[0]):
-            if not(keep[jj]):
-                continue
-            # if separate, do nothing when classes are not equal
-            if separate:
-                if cur_class != bbs[jj,5]:
-                    continue
-            # mask out all worst scoring overlapping
-            intersect_width = min(bbs_end_x[i], bbs_end_x[jj]) - max(bbs_start_x[i], bbs_start_x[jj])
-            if intersect_width <= 0:
-                continue
-            intersect_height = min(bbs_end_y[i], bbs_end_y[jj]) - max(bbs_start_y[i], bbs_start_y[jj])
-            if intersect_width <= 0:
-                continue
-            intersect_area = intersect_width * intersect_height
-            union_area = bbs_areas[i] + bbs_areas[jj] - intersect_area
-            overlap = intersect_area / union_area
-            # threshold and reject
-            if overlap > overlap_thr:
-                keep[jj] = False
-
-    keep_idxs=[]
-    for i in range(len(keep)):
-        if keep[i]:
-            keep_idxs = keep_idxs + [i]
-    return bbs[keep_idxs,:]
-
-def HogResponseNms(responses, dim, score_thr = .25, olap_thr=.5):
-    '''
-    NMS over hog response surfaces.
-    NOTE: everything gets scaled up by 8 pix
-    '''
-    bbs = np.zeros(0)
-    # compute NMS over each class separately
-    for i in range(responses.shape[2]):
-        # find highest response
-        # zero out all nearby responses
-        cur_response = responses[:,:,i]
-        cur_max = cur_response.max()
-        cur_xy = np.unravel_index(cur_response.argmax(),
-                                  cur_response.shape)
-        while cur_max > score_thr:
-            # add current guy to result bb list
-            bb = np.array([cur_xy[0],
-                           cur_xy[1],
-                           dim[0], dim[1], cur_max, i])
-            if bbs.shape[0] == 0:
-                bbs = bb
-            else:
-                bbs = np.vstack((bbs, bb))
-
-            '''
-            i1_mask = max(0,bb[0])
-            i2_mask = min(cur_response.shape[0],bb[0]+bb[2])
-            j1_mask = max(0,bb[1])
-            j2_mask = min(cur_response.shape[1],bb[1]+bb[3])
-            '''
-            
-            i1_mask = max(bb[0] - dim[0] * olap_thr, 0)
-            i2_mask = min(bb[0] + dim[0] * olap_thr, cur_response.shape[0])
-            j1_mask = max(bb[1] - dim[1] * olap_thr, 0)
-            j2_mask = min(bb[1] + dim[1] * olap_thr, cur_response.shape[1])
-
-            cur_response[i1_mask:i2_mask, j1_mask:j2_mask]=-1
-            cur_max = cur_response.max()
-            cur_xy = np.unravel_index(cur_response.argmax(),
-                                      cur_response.shape)
-
-    # bring bbs back to image space: 1 cell represents 8 pixels
-    for i in range(bbs.shape[0]):
-        bbs[i,0] = bbs[i,0] * 8
-        bbs[i,1] = bbs[i,1] * 8
-        bbs[i,2] = bbs[i,2] * 8
-        bbs[i,3] = bbs[i,3] * 8       
-
-    return bbs
-
 def TestCharDetector(img, hog, rf, canon_size, alphabet):
-    # loop over scales
-    scales = [1.0]
-    bbs = np.zeros(0)
-    t_det1 = time()    
-    for scale in scales:
-        new_size = (int(scale * img.shape[1]),int(scale * img.shape[0]))
-        scaled_img=cv2.resize(img,new_size)
-        feature_vector=hog.compute(scaled_img, winStride=(16,16), padding=(0,0))
-        feature_vector_3d=ReshapeHog(scaled_img, hog, feature_vector)
-        cell_height = canon_size[0]/8
-        cell_width = canon_size[1]/8    
-        responses = np.zeros((feature_vector_3d.shape[0]-cell_height+1,
-                              feature_vector_3d.shape[1]-cell_width+1,62))
-        # call the detector at each location. TODO: make more efficient
-        for i in range(feature_vector_3d.shape[0]-cell_height+1):
-            for j in range(feature_vector_3d.shape[1]-cell_width+1):
-                feats = feature_vector_3d[i:i+cell_height,j:j+cell_width,:]
-                pb = rf.predict_proba(feats.flatten()).flatten()
-                if responses.shape[2]==pb.shape[0]:
-                    responses[i,j,:] = pb
-                else:
-                    for k in range(rf.classes_.shape[0]):
-                        responses[i,j,int(rf.classes_[k])] = pb[k]
-                        
-        # NMS over responses
-        scaled_bbs = HogResponseNms(responses, (cell_height, cell_width))
-        for i in range(scaled_bbs.shape[0]):
-            scaled_bbs[i,0] = scaled_bbs[i,0] / scale
-            scaled_bbs[i,1] = scaled_bbs[i,1] / scale
-            scaled_bbs[i,2] = scaled_bbs[i,2] / scale
-            scaled_bbs[i,3] = scaled_bbs[i,3] / scale                
-
-        if bbs.shape[0]==0:
-            bbs = scaled_bbs
-        else:
-            bbs = np.vstack((bbs,scaled_bbs))
-
-    time_det = time() - t_det1
-    print "Detection time: ", time_det 
-
-    # NMS over bbs across scales
-    bbs = BbsNms(bbs)
-    OutputCharBbs(img, bbs, alphabet)
-
-def TestCharDetector2(img, hog, rf, canon_size, alphabet):
     '''
     Try to call RF just once to see if its any faster
     '''
     # loop over scales
-    scales = [.7, .8, .9, 1.0, 1.1, 1.2]
+    scales = [.7, .8, .9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
     bbs = np.zeros(0)
     t_det1 = time()    
     for scale in scales:
@@ -241,7 +96,11 @@ def TestCharDetector2(img, hog, rf, canon_size, alphabet):
                 idx = np.ravel_multi_index((i,j),(i_windows,j_windows))
                 feature_window_stack[idx,:] = feats.flatten()
 
+        t_det0 = time()
         pb = rf.predict_proba(feature_window_stack)
+        time_det0 = time() - t_det0
+        print "Detection at scale: ", time_det0
+
         if len(alphabet)==pb.shape[1]:
             responses2 = pb
         else:
@@ -266,8 +125,11 @@ def TestCharDetector2(img, hog, rf, canon_size, alphabet):
     print "Detection time: ", time_det 
 
     # NMS over bbs across scales
+    t_nms1 = time()
     bbs = BbsNms(bbs)
-    OutputCharBbs(img, bbs, alphabet)
+    time_nms = time() - t_nms1
+    print "Bbs NMS time: ", time_nms
+    # OutputCharBbs(img, bbs, alphabet)
 
 def ImgsToFeats(I, hog, canon_size):
     feats=np.zeros(0)
@@ -337,7 +199,7 @@ def TrainCharClassifier(alphabet, hog, canon_size):
         y_train = y_train.astype(np.double)
         t1 = time()
         # NOTE: n_estimators=100 and 'entropy' gives 60% accuracy
-        rf = RandomForestClassifier(n_estimators=20)
+        rf = RandomForestClassifier(n_estimators=20, n_jobs=4)
 
         rf.fit(X_train, y_train)
         tTrain = time()
@@ -376,7 +238,7 @@ def main():
     #    - b. [try this first] slice up image then extract features from each slice
     #img = cv2.imread('IMG_2532_double.JPG')
     img = cv2.imread('data/test_char_det.JPG')
-    TestCharDetector2(img, hog, rf, canon_size, alphabet)
+    TestCharDetector(img, hog, rf, canon_size, alphabet)
     
 if __name__=="__main__":
     cProfile.run('main()','profile_detection')
