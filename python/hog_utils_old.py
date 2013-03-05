@@ -1,15 +1,15 @@
 import numpy as np
 import cv,cv2
 
-def ReshapeHog(I, hog, feature_vector):
-    iblocks_per_window=hog.winSize[0]/hog.blockSize[0]
-    jblocks_per_window=hog.winSize[1]/hog.blockSize[1]
+def ReshapeHog(feature_vector, dims, blockSize, winSize, nbins):
+    iblocks_per_window=winSize[0]/blockSize[0]
+    jblocks_per_window=winSize[1]/blockSize[1]
 
-    iwindows=I.shape[0]/hog.winSize[0]
-    jwindows=I.shape[1]/hog.winSize[1]
+    iwindows=dims[0]/winSize[0]
+    jwindows=dims[1]/winSize[1]
 
     feature_vector_3d=np.zeros((iwindows*iblocks_per_window*2,
-                                jwindows*jblocks_per_window*2,hog.nbins))
+                                jwindows*jblocks_per_window*2,nbins))
 
     idx=0;
     for ywin in range(iwindows):
@@ -30,7 +30,7 @@ def ReshapeHog(I, hog, feature_vector):
                         elif (i==3):
                             cell_off_x=1
                             cell_off_y=1
-                        for o in range(hog.nbins):
+                        for o in range(nbins):
                             feature_vector_3d[win_y+cell_y+cell_off_y,
                                               win_x+cell_x+cell_off_x,o]=feature_vector[idx]
                             idx+=1

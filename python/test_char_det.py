@@ -10,13 +10,16 @@ import cProfile
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+
 from hog_utils import draw_hog, ReshapeHog
-from nms import BbsNms, HogResponseNms
+from char_det import CharDetector
+
 from time import time
 from sklearn.ensemble import RandomForestClassifier
 
 from sklearn.datasets import fetch_mldata
 from numpy import arange
+
 
 def OutputCharBbs(I, bbs, alphabet, output_dir='dbg'):
     Irgb = np.copy(I)
@@ -69,67 +72,20 @@ def DrawCharBbs(I, bbs, alphabet, filter_label=-1, draw_top=-1):
                          backgroundcolor=(1,1,1))
 
 
-def TestCharDetector(img, hog, rf, canon_size, alphabet):
+def TestCharDetector(img, hog, rf, canon_size, alphabet, save_imgs=False):
     '''
     Try to call RF just once to see if its any faster
     '''
     # loop over scales
     scales = [.7, .8, .9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
-    bbs = np.zeros(0)
-    t_det1 = time()    
-    for scale in scales:
-        new_size = (int(scale * img.shape[1]),int(scale * img.shape[0]))
-        scaled_img=cv2.resize(img,new_size)
-        feature_vector=hog.compute(scaled_img, winStride=(16,16), padding=(0,0))
-        feature_vector_3d=ReshapeHog(scaled_img, hog, feature_vector)
-        cell_height = canon_size[0]/8
-        cell_width = canon_size[1]/8    
-        i_windows = feature_vector_3d.shape[0]-cell_height+1
-        j_windows = feature_vector_3d.shape[1]-cell_width+1
-        responses2 = np.zeros((i_windows * j_windows, len(alphabet)))
-        feature_window_stack = np.zeros((i_windows * j_windows, cell_height*cell_width*9))
+    show_times = True
 
-        # call the detector at each location. TODO: make more efficient
-        for i in range(i_windows):
-            for j in range(j_windows):
-                feats = feature_vector_3d[i:i+cell_height,j:j+cell_width,:]
-                idx = np.ravel_multi_index((i,j),(i_windows,j_windows))
-                feature_window_stack[idx,:] = feats.flatten()
-
-        t_det0 = time()
-        pb = rf.predict_proba(feature_window_stack)
-        time_det0 = time() - t_det0
-        print "Detection at scale: ", time_det0
-
-        if len(alphabet)==pb.shape[1]:
-            responses2 = pb
-        else:
-            dumb_idxs = []
-            responses2[:,rf.classes_.tolist()] = pb
-                        
-        responses2=responses2.reshape((i_windows, -1, len(alphabet)))
-        # NMS over responses
-        scaled_bbs = HogResponseNms(responses2, (cell_height, cell_width))
-        for i in range(scaled_bbs.shape[0]):
-            scaled_bbs[i,0] = scaled_bbs[i,0] / scale
-            scaled_bbs[i,1] = scaled_bbs[i,1] / scale
-            scaled_bbs[i,2] = scaled_bbs[i,2] / scale
-            scaled_bbs[i,3] = scaled_bbs[i,3] / scale                
-
-        if bbs.shape[0]==0:
-            bbs = scaled_bbs
-        else:
-            bbs = np.vstack((bbs,scaled_bbs))
-
-    time_det = time() - t_det1
-    print "Detection time: ", time_det 
-
-    # NMS over bbs across scales
-    t_nms1 = time()
-    bbs = BbsNms(bbs)
-    time_nms = time() - t_nms1
-    print "Bbs NMS time: ", time_nms
-    # OutputCharBbs(img, bbs, alphabet)
+    start_time = time()
+    bbs = CharDetector(img, hog, rf, canon_size, alphabet, scales, debug=show_times)
+    print 'Char detector time: ', time() - start_time
+    
+    if save_imgs:
+        OutputCharBbs(img, bbs, alphabet)
 
 def ImgsToFeats(I, hog, canon_size):
     feats=np.zeros(0)
@@ -140,7 +96,8 @@ def ImgsToFeats(I, hog, canon_size):
         if feats.shape[0]==0:
             feats=np.zeros((feature_vector.shape[0],I.shape[3]))
 
-        feature_vector_3d=ReshapeHog(img, hog, feature_vector)
+        feature_vector_3d=ReshapeHog(feature_vector, (img.shape[0],img.shape[1]),
+                                     hog.blockSize, hog.winSize, hog.nbins)
         feats[:,i]=feature_vector_3d.flatten()
     return feats
 
@@ -231,14 +188,15 @@ def main():
     
     # 1. train classifier
     rf=TrainCharClassifier(alphabet, hog, canon_size)
-    # TestCharClassifier(alphabet, hog, rf, canon_size)
+    #TestCharClassifier(alphabet, hog, rf, canon_size)
 
     # 2. extract full image features
     #    - a. extract features from whole image, then slice up features into groups
     #    - b. [try this first] slice up image then extract features from each slice
-    #img = cv2.imread('IMG_2532_double.JPG')
-    img = cv2.imread('data/test_char_det.JPG')
-    TestCharDetector(img, hog, rf, canon_size, alphabet)
+    #img = cv2.imread('data/IMG_2532_double.JPG')
+    #img = cv2.imread('data/test_800x600.JPG')
+    img = cv2.imread('data/test_1600x1200.JPG')
+    TestCharDetector(img, hog, rf, canon_size, alphabet, save_imgs=False)
     
 if __name__=="__main__":
     cProfile.run('main()','profile_detection')

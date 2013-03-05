@@ -1,50 +1,88 @@
+import pdb
 import numpy as np
-from time import time
 
-def HogResponseNms(responses, dim, score_thr = .25, olap_thr=.5):
-    t1 = time()
+def HogResponseNms(responses, cell_height, cell_width, score_thr = .25, olap_thr=.5):
     '''
     NMS over hog response surfaces.
     NOTE: everything gets scaled up by 8 pix
     '''
-    bbs = np.zeros(0)
+    '''
+    max_bbs_h = responses.shape[0] / (olap_thr * cell_height * 2)
+    max_bbs_w = responses.shape[1] / (olap_thr * cell_width * 2)
+    '''
+    # compute upper bound on bbs
+
+    max_bbs = np.sum(responses>score_thr)
+    print 'max bbs: ', max_bbs
+    bbs = np.zeros((max_bbs,6))
+    k = 0
     # compute NMS over each class separately
     for i in range(responses.shape[2]):
         # find highest response
         # zero out all nearby responses
         cur_response = responses[:,:,i]
         cur_max = cur_response.max()
-        cur_xy = np.unravel_index(cur_response.argmax(),
-                                  cur_response.shape)
+        cur_y,cur_x = np.unravel_index(cur_response.argmax(),
+                                       cur_response.shape)
         while cur_max > score_thr:
             # add current guy to result bb list
-            bb = np.array([cur_xy[0],
-                           cur_xy[1],
-                           dim[0], dim[1], cur_max, i])
-            if bbs.shape[0] == 0:
-                bbs = bb
-            else:
-                bbs = np.vstack((bbs, bb))
-
-            i1_mask = max(bb[0] - dim[0] * olap_thr, 0)
-            i2_mask = min(bb[0] + dim[0] * olap_thr, cur_response.shape[0])
-            j1_mask = max(bb[1] - dim[1] * olap_thr, 0)
-            j2_mask = min(bb[1] + dim[1] * olap_thr, cur_response.shape[1])
+            bbs[k,0] = cur_y
+            bbs[k,1] = cur_x
+            bbs[k,2] = cell_height
+            bbs[k,3] = cell_width
+            bbs[k,4] = cur_max
+            bbs[k,5] = i
+            
+            i1_mask = max(bbs[k,0] - cell_height * olap_thr, 0)
+            i2_mask = min(bbs[k,0] + cell_height * olap_thr, cur_response.shape[0])
+            j1_mask = max(bbs[k,1] - cell_width * olap_thr, 0)
+            j2_mask = min(bbs[k,1] + cell_width * olap_thr, cur_response.shape[1])
 
             cur_response[i1_mask:i2_mask, j1_mask:j2_mask]=-1
             cur_max = cur_response.max()
-            cur_xy = np.unravel_index(cur_response.argmax(),
-                                      cur_response.shape)
+            cur_y,cur_x = np.unravel_index(cur_response.argmax(),
+                                           cur_response.shape)
+            k+=1
 
+
+    bbs = bbs[0:k,:]
     # bring bbs back to image space: 1 cell represents 8 pixels
-    for i in range(bbs.shape[0]):
-        bbs[i,0] = bbs[i,0] * 8
-        bbs[i,1] = bbs[i,1] * 8
-        bbs[i,2] = bbs[i,2] * 8
-        bbs[i,3] = bbs[i,3] * 8       
+    scale_by = np.ones((bbs.shape[0],bbs.shape[1]))
+    scale_by[:,0:4] = 8
+    bbs = np.multiply(bbs, scale_by)
+    return bbs
 
-    time_nms = time() - t1
-    print "Response NMS time: ", time_nms
+def HogResponseNms2(responses, cell_height, cell_width, score_thr = .25, overlap_thr=.5):
+    '''
+    NMS over hog response surfaces.
+    NOTE: everything gets scaled up by 8 pix
+    '''
+    '''
+    max_bbs_h = responses.shape[0] / (olap_thr * cell_height * 2)
+    max_bbs_w = responses.shape[1] / (olap_thr * cell_width * 2)
+    '''
+    # compute upper bound on bbs
+
+    max_bbs = np.sum(responses>score_thr)
+    print 'max bbs: ', max_bbs
+    bbs = np.zeros((max_bbs,6))
+
+
+    idxs = np.nonzero(responses>score_thr)
+    scores = responses[responses>score_thr]
+    y_pos = idxs[0]
+    x_pos = idxs[1]
+    class_label = idxs[2]
+
+    bbs[:,0] = y_pos * 8
+    bbs[:,1] = x_pos * 8
+    bbs[:,2] = cell_height * 8
+    bbs[:,3] = cell_width * 8
+    bbs[:,4] = scores
+    bbs[:,5] = class_label
+
+    bbs = BbsNms(bbs, overlap_thr = overlap_thr)
+
     return bbs
 
 def BbsNms(bbs, overlap_thr = 0, separate = True):
