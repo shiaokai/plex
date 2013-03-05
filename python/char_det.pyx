@@ -24,7 +24,11 @@ cdef inline int int_min(int a, int b): return a if a <= b else b
 cdef inline float float_max(float a, float b): return a if a >= b else b
 cdef inline float float_min(float a, float b): return a if a <= b else b
 
-def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf, canon_size, alphabet, scales, debug=False):
+def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf,
+                 canon_size, alphabet, min_height=0.1, max_height=1.0,
+                 step_size=np.power(2,.25), debug=False, score_thr=.25, detect_idxs=[]):
+
+    assert max_height<=1.0
     '''
     Try to call RF just once to see if its any faster
     '''
@@ -37,6 +41,7 @@ def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf, canon_size, alphabet
     cdef np.ndarray[DTYPE32_t, ndim=1] feats
     cdef np.ndarray[DTYPE64_t, ndim=2] responses
     cdef np.ndarray[DTYPE64_t, ndim=3] responses3d
+    cdef np.ndarray[DTYPE64_t, ndim=3] responses3d_sub
     cdef np.ndarray[DTYPE64_t, ndim=2] pb
     cdef np.ndarray[DTYPE32_t, ndim=2] feature_window_stack
 
@@ -52,7 +57,15 @@ def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf, canon_size, alphabet
         total_hog_cmp = 0
         t_det1 = time()    
 
-    for scale in scales:
+    start_scale = max(canon_size[0]/(max_height*img.shape[0]),
+                      canon_size[1]/(max_height*img.shape[1]))
+    start_scale = int(np.ceil(np.log(start_scale) / np.log(step_size)))
+    end_scale = max(canon_size[0]/(min_height*img.shape[0]),
+                    canon_size[1]/(min_height*img.shape[1]))
+    end_scale = int(np.floor(np.log(end_scale) / np.log(step_size)))
+
+    for scale_power in range(start_scale, end_scale):
+        scale = np.power(step_size, scale_power)
         scaled_img=cv2.resize(img, (int(scale * img_w), int(scale * img_h)))
 
         if debug:
@@ -93,17 +106,27 @@ def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf, canon_size, alphabet
             time_det0 = time() - t_det0
             total_rf += time_det0
 
-        if len(alphabet)==pb.shape[1]:
-            responses = pb
-        else:
-            dumb_idxs = []
-            responses[:,rf.classes_.tolist()] = pb
+        #if len(alphabet)==pb.shape[1]:
+        #    responses = pb
+        #else:
+        responses[:,rf.classes_.tolist()] = pb
                         
         responses3d=responses.reshape((i_windows, -1, len(alphabet)))
         # NMS over responses
         if debug:
             t_nms0 = time()
-        scaled_bbs = HogResponseNms(responses3d, cell_height, cell_width)
+
+        if len(detect_idxs)>0:
+            responses3d_sub = np.zeros((responses3d.shape[0],
+                                        responses3d.shape[1],
+                                        len(detect_idxs)),
+                                        dtype=DTYPE64)
+            responses3d_sub = responses3d[:,:,detect_idxs]
+            scaled_bbs = HogResponseNms(responses3d_sub, cell_height,
+                                        cell_width, score_thr=score_thr)
+        else:
+            scaled_bbs = HogResponseNms(responses3d, cell_height,
+                                        cell_width, score_thr=score_thr)
         if debug:
             total_hog_nms += time() - t_nms0 
         for i in range(scaled_bbs.shape[0]):

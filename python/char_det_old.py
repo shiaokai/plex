@@ -19,7 +19,13 @@ from sklearn.datasets import fetch_mldata
 from numpy import arange
 
 
-def CharDetector(img, hog, rf, canon_size, alphabet, scales, debug=False):
+def CharDetector(img, hog, rf, canon_size, alphabet,
+                 min_height=0.1, max_height=1.0,
+                 step_size=np.power(2,.25), score_thr=.25,
+                 detect_idxs=[], debug=False):
+
+    assert max_height<=1.0
+
     '''
     Try to call RF just once to see if its any faster
     '''
@@ -32,7 +38,19 @@ def CharDetector(img, hog, rf, canon_size, alphabet, scales, debug=False):
         total_hog_cmp = 0
         t_det1 = time()    
 
-    for scale in scales:
+    # compute scale range
+    #   1.0 means sliding window height/width is the same
+    #       as the image resized height/width
+
+    start_scale = max(canon_size[0]/(max_height*img.shape[0]),
+                    canon_size[1]/(max_height*img.shape[1]))
+    start_scale = int(np.ceil(np.log(start_scale) / np.log(step_size)))
+    end_scale = max(canon_size[0]/(min_height*img.shape[0]),
+                    canon_size[1]/(min_height*img.shape[1]))
+    end_scale = int(np.floor(np.log(end_scale) / np.log(step_size)))
+
+    for scale_power in range(start_scale, end_scale):
+        scale = np.power(step_size, scale_power)
         new_size = (int(scale * img.shape[1]),int(scale * img.shape[0]))
         scaled_img=cv2.resize(img,new_size)
 
@@ -55,6 +73,7 @@ def CharDetector(img, hog, rf, canon_size, alphabet, scales, debug=False):
         i_windows = feature_vector_3d.shape[0]-cell_height+1
         j_windows = feature_vector_3d.shape[1]-cell_width+1
         responses2 = np.zeros((i_windows * j_windows, len(alphabet)))
+
         feature_window_stack = np.zeros((i_windows * j_windows, cell_height*cell_width*9))
 
         # call the detector at each location. TODO: make more efficient
@@ -73,17 +92,23 @@ def CharDetector(img, hog, rf, canon_size, alphabet, scales, debug=False):
             time_det0 = time() - t_det0
             total_rf += time_det0
 
-        if len(alphabet)==pb.shape[1]:
-            responses2 = pb
-        else:
-            dumb_idxs = []
-            responses2[:,rf.classes_.tolist()] = pb
-                        
+        responses2[:,rf.classes_.tolist()] = pb
         responses2=responses2.reshape((i_windows, -1, len(alphabet)))
         # NMS over responses
         if debug:
             t_nms0 = time()
-        scaled_bbs = HogResponseNms(responses2, (cell_height, cell_width))
+
+
+        if len(detect_idxs)>0:
+            responses_subset = np.zeros((responses2.shape[0],
+                                         responses2.shape[1], len(detect_idxs)))
+            responses_subset = responses2[:,:,detect_idxs]
+            scaled_bbs = HogResponseNms(responses_subset, cell_height, cell_width,
+                                        score_thr=score_thr)
+        else:
+            scaled_bbs = HogResponseNms(responses2, cell_height, cell_width,
+                                        score_thr=score_thr)
+
         if debug:
             total_hog_nms += time() - t_nms0 
         for i in range(scaled_bbs.shape[0]):
