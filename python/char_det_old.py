@@ -18,7 +18,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import fetch_mldata
 from numpy import arange
 
-
+@profile
 def CharDetector(img, hog, rf, canon_size, alphabet,
                  min_height=0.1, max_height=1.0,
                  step_size=np.power(2,.25), score_thr=.25,

@@ -41,10 +41,9 @@ def ReshapeHog(np.ndarray[DTYPE_t, ndim=2] feature_vector, dims, blockSize, winS
                         elif (i==3):
                             cell_off_x=1
                             cell_off_y=1
-                        for o in range(nbins):
-                            feature_vector_3d[win_y+cell_y+cell_off_y,
-                                              win_x+cell_x+cell_off_x,o]=feature_vector[idx]
-                            idx+=1
+
+                        feature_vector_3d[win_y+cell_y+cell_off_y, win_x+cell_x+cell_off_x,:]=np.squeeze(feature_vector[idx:idx+nbins])
+                        idx+=nbins
 
     return feature_vector_3d
     

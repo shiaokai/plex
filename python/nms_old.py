@@ -13,7 +13,7 @@ def HogResponseNms(responses, cell_height, cell_width, score_thr = .25, olap_thr
     # compute upper bound on bbs
 
     max_bbs = np.sum(responses>score_thr)
-    print 'max bbs: ', max_bbs
+    #print 'max bbs: ', max_bbs
     bbs = np.zeros((max_bbs,6))
     k = 0
     # compute NMS over each class separately
@@ -52,39 +52,7 @@ def HogResponseNms(responses, cell_height, cell_width, score_thr = .25, olap_thr
     bbs = np.multiply(bbs, scale_by)
     return bbs
 
-def HogResponseNms2(responses, cell_height, cell_width, score_thr = .25, overlap_thr=.5):
-    '''
-    NMS over hog response surfaces.
-    NOTE: everything gets scaled up by 8 pix
-    '''
-    '''
-    max_bbs_h = responses.shape[0] / (olap_thr * cell_height * 2)
-    max_bbs_w = responses.shape[1] / (olap_thr * cell_width * 2)
-    '''
-    # compute upper bound on bbs
-
-    max_bbs = np.sum(responses>score_thr)
-    print 'max bbs: ', max_bbs
-    bbs = np.zeros((max_bbs,6))
-
-
-    idxs = np.nonzero(responses>score_thr)
-    scores = responses[responses>score_thr]
-    y_pos = idxs[0]
-    x_pos = idxs[1]
-    class_label = idxs[2]
-
-    bbs[:,0] = y_pos * 8
-    bbs[:,1] = x_pos * 8
-    bbs[:,2] = cell_height * 8
-    bbs[:,3] = cell_width * 8
-    bbs[:,4] = scores
-    bbs[:,5] = class_label
-
-    bbs = BbsNms(bbs, overlap_thr = overlap_thr)
-
-    return bbs
-
+@profile
 def BbsNms(bbs, overlap_thr = 0, separate = True):
     '''
     NMS over bounding box list

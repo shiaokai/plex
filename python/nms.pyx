@@ -70,64 +70,6 @@ def HogResponseNms(np.ndarray[DTYPE_t, ndim=3] responses not None,
     bbs = np.multiply(bbs, scale_by)
     return bbs
 
-def HogResponseNms2(np.ndarray[DTYPE_t, ndim=3] responses not None,
-                    float cell_height, float cell_width,
-                    float score_thr =.25, float olap_thr=.5):
-    '''
-    NMS over hog response surfaces.
-    NOTE: everything gets scaled up by 8 pix
-    '''
-
-    cdef int max_bbs = np.sum(responses>score_thr)
-    cdef int k = 0
-    # print 'max bbs: ', max_bbs
-    # this might crash if too big?
-    cdef np.ndarray[DTYPE_t, ndim=2] bbs = np.zeros((max_bbs,6), dtype=DTYPE)
-    cdef np.ndarray[DTYPE_t, ndim=2] scale_by
-    cdef np.ndarray[DTYPE_t, ndim=2] cur_response
-    cdef DTYPE_t cur_max
-    cdef int cur_x, cur_y
-    cdef int r_height = responses.shape[0]
-    cdef int r_width = responses.shape[1]
-    cdef int i
-    cdef int i1_mask, i2_mask, j1_mask, j2_mask
-    cdef int mask_height = <int>(cell_height * olap_thr)
-    cdef int mask_width = <int>(cell_width * olap_thr)
-
-    # create bb list out of all scores > score_thr then call bbNms
-    
-    # compute NMS over each class separately
-    for i in range(responses.shape[2]):
-        # find highest response
-        # zero out all nearby responses
-        cur_response = responses[:,:,i]
-        cur_max = cur_response.max()
-        cur_x, cur_y = np.unravel_index(cur_response.argmax(),(r_height,r_width))
-        while cur_max > score_thr:
-            # add current guy to result bb list
-            bbs[k,0] = cur_y
-            bbs[k,1] = cur_x
-            bbs[k,2] = cell_height
-            bbs[k,3] = cell_width
-            bbs[k,4] = cur_max
-            bbs[k,5] = i
-
-            i1_mask = int_max((<int>bbs[k,0]) - mask_height, 0)
-            i2_mask = int_min((<int>bbs[k,0]) + mask_height, r_height)
-            j1_mask = int_max((<int>bbs[k,1]) - mask_width, 0)
-            j2_mask = int_min((<int>bbs[k,1]) + mask_width, r_width)
-
-            cur_response[i1_mask:i2_mask, j1_mask:j2_mask]=-1
-            cur_max = cur_response.max()
-            cur_x, cur_y = np.unravel_index(cur_response.argmax(), (r_height,r_width))
-            k+=1
-
-    bbs = bbs[0:k,:]
-    # bring bbs back to image space: 1 cell represents 8 pixels
-    scale_by = np.ones((bbs.shape[0],bbs.shape[1]), dtype=DTYPE)
-    scale_by[:,0:4] = 8
-    bbs = np.multiply(bbs, scale_by)
-    return bbs
 
 def BbsNms(np.ndarray[DTYPE_t, ndim=2] bbs, overlap_thr = 0, separate = True):
     '''

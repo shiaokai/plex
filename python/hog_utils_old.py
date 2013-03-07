@@ -1,5 +1,6 @@
 import numpy as np
 import cv,cv2
+import pdb
 
 def ReshapeHog(feature_vector, dims, blockSize, winSize, nbins):
     iblocks_per_window=winSize[0]/blockSize[0]
@@ -30,10 +31,15 @@ def ReshapeHog(feature_vector, dims, blockSize, winSize, nbins):
                         elif (i==3):
                             cell_off_x=1
                             cell_off_y=1
+
+                        feature_vector_3d[win_y+cell_y+cell_off_y, win_x+cell_x+cell_off_x,:]=np.squeeze(feature_vector[idx:idx+nbins])
+                        idx+=nbins
+                        '''
                         for o in range(nbins):
-                            feature_vector_3d[win_y+cell_y+cell_off_y,
-                                              win_x+cell_x+cell_off_x,o]=feature_vector[idx]
+
+                            feature_vector_3d[win_y+cell_y+cell_off_y, win_x+cell_x+cell_off_x,o]=feature_vector[idx]
                             idx+=1
+                        '''
 
     return feature_vector_3d
     
