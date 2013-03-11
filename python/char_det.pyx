@@ -25,7 +25,7 @@ cdef inline float float_max(float a, float b): return a if a >= b else b
 cdef inline float float_min(float a, float b): return a if a <= b else b
 
 def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf,
-                 canon_size, alphabet, min_height=0.1, max_height=1.0,
+                 canon_size, alphabet, min_height=0.1, max_height=1.0, min_pixel_height=20,
                  step_size=np.power(2,.25), debug=False, score_thr=.25, detect_idxs=[]):
 
     assert max_height<=1.0
@@ -64,8 +64,15 @@ def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf,
                     canon_size[1]/(min_height*img.shape[1]))
     end_scale = int(np.floor(np.log(end_scale) / np.log(step_size)))
 
+    cell_height = canon_size[0]/8
+    cell_width = canon_size[1]/8    
+
     for scale_power in range(start_scale, end_scale):
         scale = np.power(step_size, scale_power)
+
+        if (canon_size[0] / scale) < min_pixel_height:
+            continue
+
         scaled_img=cv2.resize(img, (int(scale * img_w), int(scale * img_h)))
 
         if debug:
@@ -82,8 +89,6 @@ def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf,
         if debug:
             total_hog_rsh += time() - t_rsh0
 
-        cell_height = canon_size[0]/8
-        cell_width = canon_size[1]/8    
         i_windows = feature_vector_3d.shape[0]-cell_height+1
         j_windows = feature_vector_3d.shape[1]-cell_width+1
         responses = np.zeros((i_windows * j_windows, len(alphabet)), dtype=DTYPE64)

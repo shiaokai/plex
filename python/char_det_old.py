@@ -1,5 +1,3 @@
-import settings
-
 import pdb
 import os
 import random
@@ -18,10 +16,11 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import fetch_mldata
 from numpy import arange
 
-@profile
+#@profile
 def CharDetector(img, hog, rf, canon_size, alphabet,
                  min_height=0.1, max_height=1.0,
                  step_size=np.power(2,.25), score_thr=.25,
+                 min_pixel_height = 20,
                  detect_idxs=[], debug=False):
 
     assert max_height<=1.0
@@ -39,9 +38,6 @@ def CharDetector(img, hog, rf, canon_size, alphabet,
         t_det1 = time()    
 
     # compute scale range
-    #   1.0 means sliding window height/width is the same
-    #       as the image resized height/width
-
     start_scale = max(canon_size[0]/(max_height*img.shape[0]),
                     canon_size[1]/(max_height*img.shape[1]))
     start_scale = int(np.ceil(np.log(start_scale) / np.log(step_size)))
@@ -49,8 +45,15 @@ def CharDetector(img, hog, rf, canon_size, alphabet,
                     canon_size[1]/(min_height*img.shape[1]))
     end_scale = int(np.floor(np.log(end_scale) / np.log(step_size)))
 
+    cell_height = canon_size[0]/8
+    cell_width = canon_size[1]/8    
+
     for scale_power in range(start_scale, end_scale):
         scale = np.power(step_size, scale_power)
+
+        if (canon_size[0] / scale) < min_pixel_height:
+            continue
+
         new_size = (int(scale * img.shape[1]),int(scale * img.shape[0]))
         scaled_img=cv2.resize(img,new_size)
 
@@ -68,8 +71,6 @@ def CharDetector(img, hog, rf, canon_size, alphabet,
         if debug:
             total_hog_rsh += time() - t_rsh0
 
-        cell_height = canon_size[0]/8
-        cell_width = canon_size[1]/8    
         i_windows = feature_vector_3d.shape[0]-cell_height+1
         j_windows = feature_vector_3d.shape[1]-cell_width+1
         responses2 = np.zeros((i_windows * j_windows, len(alphabet)))
@@ -97,7 +98,6 @@ def CharDetector(img, hog, rf, canon_size, alphabet,
         # NMS over responses
         if debug:
             t_nms0 = time()
-
 
         if len(detect_idxs)>0:
             responses_subset = np.zeros((responses2.shape[0],
