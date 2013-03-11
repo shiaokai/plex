@@ -2,6 +2,7 @@ import os
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import pdb
 
 def OutputCharBbs(I, bbs, alphabet, output_dir='dbg'):
     Irgb = np.copy(I)
@@ -18,7 +19,6 @@ def DrawCharBbs(I, bbs, alphabet, filter_label=-1, draw_top=-1):
     plt.cla()
     ax = fig.add_subplot(111)
     plt.imshow(I);
-
     if draw_top>0:
         # sort by score
         sidx = np.argsort(bbs[:,4])
@@ -29,7 +29,7 @@ def DrawCharBbs(I, bbs, alphabet, filter_label=-1, draw_top=-1):
             else:
                 bb = bbs[sidx[i],:]
                 patch = mpl.patches.Rectangle((bb[1],bb[0]),
-                                              bb[2],bb[3],
+                                              bb[3],bb[2],
                                               color='green',
                                               fill=False)
                 # draw rectangle
@@ -46,7 +46,7 @@ def DrawCharBbs(I, bbs, alphabet, filter_label=-1, draw_top=-1):
             else:
                 # draw me
                 patch = mpl.patches.Rectangle((bb[1],bb[0]),
-                                              bb[2],bb[3],
+                                              bb[3],bb[2],
                                               color='green',
                                               fill=False)
                 ax.add_patch(patch)
