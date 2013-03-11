@@ -128,6 +128,7 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha = .5):
     dp_ptrs.reverse()
     all_word_results = []
     sorted_idx = np.argsort(root_scores)
+    # collect all configurations that end in non inf roots
     for i in range(num_roots):
         cur_bbs_idx = [i]
         cur_root_score = root_scores[i]
@@ -172,6 +173,6 @@ def ComputePairScore(parent_bb, child_bb, alpha = .5):
     cost_scale = np.abs(parent_bb[2] - child_bb[2]) / parent_bb[2]
 
     # combined costs
-    cost_pair = cost_x + cost_y + cost_scale
+    cost_pair = cost_x + 2 * cost_y + cost_scale
     cost_unary = 1 - child_bb[4]
     return  cost_pair * alpha + cost_unary * (1 - alpha)
