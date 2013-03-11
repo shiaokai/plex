@@ -10,41 +10,25 @@ import cProfile
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from nms import BbsNms, HogResponseNms
+from nms import WordBbsNms
 from time import time
+from helpers import UnionBbs
 
-# fix bug
-def UnionBbs(bbs):
-    right = -1
-    bottom = -1
-    left = np.inf
-    top = np.inf
-    for i in range(bbs.shape[0]):
-        if bbs[i,0] < top:
-            top = bbs[i,0]
-        if bbs[i,1] < left:
-            left = bbs[i,1]
-        if (bbs[i,0] + bbs[i,2]) > bottom:
-            bottom = bbs[i,0] + bbs[i,2]
-        if (bbs[i,1] + bbs[i,3]) > right:
-            right = bbs[i,1] + bbs[i,3]
-                
-    u_bb = np.array([top, left, bottom - top, right - left])
-    return u_bb
-
-def WordDetector(bbs, lexicon, alphabet):
+def WordDetector(bbs, lexicon, alphabet, max_locations = 3):
     results = []
     for i in range(len(lexicon)):
         word = lexicon[i]
         # assume word is at least 3 characters long
         assert len(word) > 2
-        (word_bb, word_score, best_bbs) = SolveWord(bbs, word, alphabet)
-        word_result = np.append(word_bb, [word_score, 0])
-        results.append((np.expand_dims(word_result, axis = 0), best_bbs))
+        word_results = SolveWord(bbs, word, alphabet, max_locations)
+        if word_results is not None:
+            for (word_bb, word_score, best_bbs) in word_results:
+                word_result = np.append(word_bb, [word_score, 0])
+                results.append((np.expand_dims(word_result, axis = 0), best_bbs))
 
     return results
 
-def SolveWord(bbs, word, alphabet, alpha = .5):
+def SolveWord(bbs, word, alphabet, max_locations, alpha = .5):
     # store costs and pointers
     dp_costs = []
     dp_ptrs = []
@@ -128,40 +112,52 @@ def SolveWord(bbs, word, alphabet, alpha = .5):
 
     dp_costs_root = dp_costs[-1]
             
+    root_scores = np.zeros(num_roots)
+    
     best_root_score = np.inf
     best_root_idx = -1
 
     for j in range(num_roots):
         root_bb = root_bbs[j,:]
         score = (1 - root_bb[4]) * (1-alpha) + dp_costs_root[j]
+        root_scores[j] = score
         if best_root_score > score:
             best_root_score = score
             best_root_idx = j
 
-    if best_root_score == np.inf:
-        print "Best match is infinite?"
-        assert 0
-
-    # collect results from optimal root
-    best_bbs_idx = [best_root_idx]
     dp_ptrs.reverse()
-    for i in range(len(word)-1):
-        dp_ptrs_j = dp_ptrs[i]
-        best_bbs_idx.append(dp_ptrs_j[best_bbs_idx[i]])
+    all_word_results = []
+    sorted_idx = np.argsort(root_scores)
+    for i in range(num_roots):
+        cur_bbs_idx = [i]
+        cur_root_score = root_scores[i]
+        if cur_root_score == np.inf:
+            continue
+        
+        for j in range(len(word)-1):
+            dp_ptrs_j = dp_ptrs[j]
+            cur_bbs_idx.append(dp_ptrs_j[cur_bbs_idx[j]])
     
-    best_bbs = np.zeros((len(word),6))
-    for i in range(len(word)):
-        bb_idx = best_bbs_idx[i]
-        char_idx  = alphabet.find(word[i])
-        char_bbs = bbs[bbs[:,5]==char_idx]
-        if (char_bbs.ndim == 1):
-            best_bbs[i,:] = char_bbs
-        else:
-            best_bbs[i,:] = char_bbs[bb_idx,:]
+        cur_bbs = np.zeros((len(word),6))
+        for j in range(len(word)):
+            bb_idx = cur_bbs_idx[j]
+            char_idx  = alphabet.find(word[j])
+            char_bbs = bbs[bbs[:,5]==char_idx]
+            if (char_bbs.ndim == 1):
+                cur_bbs[j,:] = char_bbs
+            else:
+                cur_bbs[j,:] = char_bbs[bb_idx,:]
 
-    # TODO: return top K not just 1
-    word_bb = UnionBbs(best_bbs)
-    return (word_bb, best_root_score, best_bbs)
+        word_bb = UnionBbs(cur_bbs)
+        all_word_results.append([word_bb, cur_root_score, cur_bbs])
+
+
+    # perform word-level NMS
+    word_results = WordBbsNms(all_word_results)
+    word_results = word_results[0:min(len(word_results), max_locations)]
+
+    return word_results
+
     
 def ComputePairScore(parent_bb, child_bb, alpha = .5):    
     # TODO: if child is to left of parent, return inf cost

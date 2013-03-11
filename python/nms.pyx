@@ -76,6 +76,9 @@ def BbsNms(np.ndarray[DTYPE_t, ndim=2] bbs, overlap_thr = 0, separate = True):
     NMS over bounding box list
     '''
 
+    if bbs.shape[0] == 0:
+       return np.zeros((0,6), dtype=DTYPE)
+
     # sort bbs by score
     cdef np.ndarray[np.int_t, ndim=1] sidx = np.argsort(bbs[:,4])
     sidx = sidx[::-1]
@@ -133,3 +136,25 @@ def BbsNms(np.ndarray[DTYPE_t, ndim=2] bbs, overlap_thr = 0, separate = True):
         if keep[i]:
             keep_idxs = keep_idxs + [i]
     return bbs[keep_idxs,:]
+
+
+def WordBbsNms(words, overlap_thr = 0):
+    # words = ((wordbb, score, char_bbs))
+    # create a single Bbs tuple out of words
+    
+    cdef np.ndarray[DTYPE_t, ndim=2] words_bbs = np.zeros((len(words),6), dtype=DTYPE)
+    cdef np.ndarray[DTYPE_t, ndim=2] words_bbs_nms
+    
+    for i in range(len(words)):
+        cur_word = words[i]
+        words_bbs[i,0:4] = cur_word[0]
+        words_bbs[i,4] = -cur_word[1]
+        words_bbs[i,5] = i
+
+    words_bbs_nms = BbsNms(words_bbs, overlap_thr = overlap_thr, separate = False)
+    out_words = []
+    for i in range(words_bbs_nms.shape[0]):
+        out_words.append(words[int(words_bbs_nms[i,5])])
+        
+    return out_words
+    
