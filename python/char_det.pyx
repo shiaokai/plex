@@ -2,6 +2,12 @@
 # cython: boundscheck=False
 # cython: wraparound=False
 
+import cPickle
+import os
+import shutil
+import multiprocessing as mp
+import settings
+
 from nms import BbsNms, HogResponseNms
 from hog_utils import draw_hog, ReshapeHog
 from helpers import CollapseLetterCase
@@ -25,6 +31,55 @@ cdef inline int int_max(int a, int b): return a if a >= b else b
 cdef inline int int_min(int a, int b): return a if a <= b else b
 cdef inline float float_max(float a, float b): return a if a >= b else b
 cdef inline float float_min(float a, float b): return a if a <= b else b
+
+# TODO: cythonize this function
+def CharDetectorBatch(img_dir, output_dir, rf, canon_size, alphabet,
+                      min_height=0.1, max_height=1.0,
+                      step_size=np.power(2,.25), score_thr=.25,
+                      min_pixel_height = 20,
+                      detect_idxs=[], debug=False,
+                      case_mapping=[], num_procs=1):
+
+    # clear output_dir
+    if os.path.isdir(output_dir):
+        shutil.rmtree(output_dir)
+    os.makedirs(output_dir)
+
+    jobs = []
+    for root, dirs, files in os.walk(img_dir):
+        for name in files:
+            p1,ext=os.path.splitext(name)
+            if ext!='.jpg':
+                continue
+
+            save_path = os.path.join(output_dir, name + '.npy')
+            job = (root, name, rf, canon_size, alphabet, detect_idxs,
+                   min_height, score_thr, save_path)
+            jobs.append(job)
+
+    if num_procs == 1:
+        for job in jobs:
+            CharDetectorBatchWorker(job)
+    else:
+        print 'using ', num_procs, ' processes to work on ', len(jobs), ' jobs.'
+        pool=mp.Pool(processes=num_procs)
+        pool.map_async(CharDetectorBatchWorker, jobs)
+        pool.close()
+        pool.join()
+    
+def CharDetectorBatchWorker(job):
+    (img_dir, name, rf, canon_size, alphabet, detect_idxs, min_height, score_thr, save_path) = job
+                   
+    img = cv2.imread(os.path.join(img_dir,name))
+    start_time = time()
+    bbs = CharDetector(img, settings.hog, rf, canon_size, alphabet,
+                       detect_idxs=detect_idxs, debug=False,
+                       min_height=min_height, score_thr=score_thr)
+
+    with open(save_path,'wb') as fid:
+        cPickle.dump(bbs,fid)
+
+    print name, ' ', time() - start_time
 
 def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf,
                  canon_size, alphabet, min_height=0.1, max_height=1.0, min_pixel_height=20,

@@ -5,6 +5,8 @@ import numpy as np
 import cv,cv2
 import cPickle
 import cProfile
+import shutil
+import multiprocessing as mp
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -16,6 +18,55 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.datasets import fetch_mldata
 from numpy import arange
 from helpers import CollapseLetterCase
+
+import settings
+
+def CharDetectorBatch(img_dir, output_dir, rf, canon_size, alphabet,
+                      min_height=0.1, max_height=1.0,
+                      step_size=np.power(2,.25), score_thr=.25,
+                      min_pixel_height = 20,
+                      detect_idxs=[], debug=False,
+                      case_mapping=[], num_procs=1):
+
+    # clear output_dir
+    if os.path.isdir(output_dir):
+        shutil.rmtree(output_dir)
+    os.makedirs(output_dir)
+
+    jobs = []
+    for root, dirs, files in os.walk(img_dir):
+        for name in files:
+            p1,ext=os.path.splitext(name)
+            if ext!='.jpg':
+                continue
+
+            save_path = os.path.join(output_dir, name + '.npy')
+            job = (root, name, rf, canon_size, alphabet, detect_idxs,
+                   min_height, score_thr, save_path)
+            jobs.append(job)
+
+    if num_procs == 1:
+        for job in jobs:
+            CharDetectorBatchWorker(job)
+    else:
+        print 'using ', num_procs, ' processes to work on ', len(jobs), ' jobs.'
+        pool=mp.Pool(processes=num_procs)
+        pool.map_async(CharDetectorBatchWorker, jobs)
+        pool.close()
+        pool.join()
+    
+def CharDetectorBatchWorker(job):
+    (img_dir, name, rf, canon_size, alphabet, detect_idxs, min_height, score_thr, save_path) = job
+                   
+    img = cv2.imread(os.path.join(img_dir,name))
+    bbs = CharDetector(img, settings.hog, rf, canon_size, alphabet,
+                       detect_idxs=detect_idxs, debug=False,
+                       min_height=min_height, score_thr=score_thr)
+
+    with open(save_path,'wb') as fid:
+        cPickle.dump(bbs,fid)
+
+    print name
 
 #@profile
 def CharDetector(img, hog, rf, canon_size, alphabet,

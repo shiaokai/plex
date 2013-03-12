@@ -8,9 +8,10 @@ import cv,cv2
 import cPickle
 import cProfile
 import copy
+import tempfile
 
 from hog_utils import draw_hog, ReshapeHog
-from char_det_old import CharDetector
+from char_det import CharDetector, CharDetectorBatch
 
 from time import time
 from sklearn.ensemble import RandomForestClassifier
@@ -95,35 +96,8 @@ def TestCharClassifier(alphabet, test_dir, bg_dir, hog, canon_size, rf,
     print 'test time: ', time_test
     print "Accuracy: %0.2f" % (score)
 
-def BootstrapWorker(job):
-    (bs_img_dir, name, rf, canon_size, alphabet, detect_idxs, min_height, score_thr, bs_out_dir, max_per_image) = job
-                   
-    img = cv2.imread(os.path.join(bs_img_dir,name))
-    bbs = CharDetector(img, settings.hog, rf, canon_size, alphabet,
-                       detect_idxs=detect_idxs, debug=False,
-                       min_height=min_height, score_thr=score_thr)
-
-    bg_result_dir = os.path.join(bs_out_dir, name)
-    os.makedirs(bg_result_dir)
-
-    if bbs.shape[0]==0:
-        print "Mined none from %s" % (name)
-        return
-
-    # assume bbs sorted
-    print "Mined %d from %s" % (bbs.shape[0], name)
-    for i in range(min(bbs.shape[0], max_per_image)):
-        bb = bbs[i,:]
-        # crop bb out of image
-        patch = img[bb[0]:bb[0]+bb[2],bb[1]:bb[1]+bb[3],:]
-        # save
-        new_fname = "I%05i.png" % (i)
-        full_fname = os.path.join(bg_result_dir, new_fname)
-        patch_100x100=cv2.resize(patch,(100,100))
-        res = cv2.imwrite(full_fname, patch_100x100)
-            
-def Bootstrap_mp(bs_img_dir, bs_out_dir, bg_dir, canon_size,
-                 alphabet, detect_idxs, rf, max_per_image = 100, num_procs=1):
+def Bootstrap(bs_img_dir, bs_out_dir, bg_dir, canon_size,
+              alphabet, detect_idxs, rf, max_per_image = 100, num_procs=1):
 
     # clear out previous bootstrap data
     bs_parent_dir,child = os.path.split(bs_out_dir)
@@ -134,32 +108,62 @@ def Bootstrap_mp(bs_img_dir, bs_out_dir, bg_dir, canon_size,
     # copy initial BGs
     shutil.copytree(bg_dir,bs_out_dir)
 
-    jobs = []
+    # set up temporary output dir
+    temp_dir = tempfile.mkdtemp()
+        
+    # set up params
     min_height = 0.05
     score_thr = 0.25
+
+    # call batch chardetector
+    CharDetectorBatch(bs_img_dir, temp_dir, rf, canon_size, alphabet,
+                      detect_idxs=detect_idxs, min_height=min_height,
+                      score_thr=score_thr, num_procs=6)
+
+    last_fname = []
+    for root, dirs, files in os.walk(bs_out_dir):
+        last_fname = sorted(files)
+        last_fname = last_fname[-1]
+
+    name,ext = os.path.splitext(last_fname)
+    start_offset = int(name[1::])
+    counter = 1
+
+    # walk the img dir and check if temp_dir has a npy file
     for root, dirs, files in os.walk(bs_img_dir):
         for name in files:
             p1,ext=os.path.splitext(name)
             if ext!='.jpg':
                 continue
+    
+            # check if precomp file exists
+            npy_file = os.path.join(temp_dir, name + '.npy')
+            if not os.path.exists(npy_file):
+                print "no results from: ", name
+                continue
 
-            job = (bs_img_dir, name, rf,
-                   canon_size, alphabet, detect_idxs,
-                   min_height, score_thr, bs_out_dir, max_per_image)
-            jobs.append(job)
-                   
-    if num_procs == 1:
-        for job in jobs:
-            BootstrapWorker(job)
-    else:
-        print 'using ', num_procs, ' processes to work on ', len(jobs), ' jobs.'
-        pool=mp.Pool(processes=num_procs)
-        pool.map_async(BootstrapWorker, jobs)
-        pool.close()
-        pool.join()
+            img = cv2.imread(os.path.join(root,name))
+            with open(npy_file,'rb') as fid:
+                bbs = cPickle.load(fid)
+    
+            # assume bbs sorted
+            print "Found %d in %s" % (bbs.shape[0], name)
+            for i in range(min(bbs.shape[0], max_per_image)):
+                bb = bbs[i,:]
+                # crop bb out of image
+                patch = img[bb[0]:bb[0]+bb[2],bb[1]:bb[1]+bb[3],:]
+                # save
+                new_fname = "I%05i.png" % (start_offset + counter)
+                full_fname = os.path.join(bs_out_dir, new_fname)
+                patch_100x100=cv2.resize(patch,(100,100))
+                res = cv2.imwrite(full_fname, patch_100x100)
+                counter += 1
+
+    # clean up
+    shutil.rmtree(temp_dir)
 
 def main():
-    '''
+
     # 1. train a base classifier
     rf=TrainCharClassifier(settings.alphabet_master,
                            settings.char_train_dir,
@@ -169,7 +173,7 @@ def main():
                            clf_path=settings.initial_char_clf_name,
                            max_per_class=settings.max_per_class,
                            max_bg=settings.max_bg,
-                           force=True)
+                           force=False)
 
     # 2. 62-way
     TestCharClassifier(settings.alphabet_detect,
@@ -180,15 +184,15 @@ def main():
                        rf)
 
     # 3. bootstrap
-    Bootstrap_mp(settings.bootstrap_img_dir,
-                 settings.bootstrap_bg_dir,              
-                 settings.char_train_bg_dir,
-                 settings.canon_size,
-                 settings.alphabet_master,
-                 settings.detect_idxs,
-                 rf,
-                 num_procs=settings.n_procs)
-    '''
+    Bootstrap(settings.bootstrap_img_dir,
+              settings.bootstrap_bg_dir,              
+              settings.char_train_bg_dir,
+              settings.canon_size,
+              settings.alphabet_master,
+              settings.detect_idxs,
+              rf,
+              num_procs=settings.n_procs)
+
     # 4. train a classifier after bootstrap
     TrainCharClassifier(settings.alphabet_master,
                         settings.char_train_dir,
