@@ -159,6 +159,7 @@ def Bootstrap_mp(bs_img_dir, bs_out_dir, bg_dir, canon_size,
         pool.join()
 
 def main():
+    '''
     # 1. train a base classifier
     rf=TrainCharClassifier(settings.alphabet_master,
                            settings.char_train_dir,
@@ -187,7 +188,7 @@ def main():
                  settings.detect_idxs,
                  rf,
                  num_procs=settings.n_procs)
-
+    '''
     # 4. train a classifier after bootstrap
     TrainCharClassifier(settings.alphabet_master,
                         settings.char_train_dir,

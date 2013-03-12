@@ -4,6 +4,7 @@ import hashlib
 import os
 import pdb
 import cv2
+import random
 
 def ReadAllImages(char_dir, bg_dir, char_classes,
                   max_per_class=np.inf, max_bg=np.inf):
@@ -32,7 +33,7 @@ def ReadAllImages(char_dir, bg_dir, char_classes,
                         break
                     files1_with_parents = [cur_dir + os.sep + f for f in files1]
                     files += files1_with_parents
-                    
+
             if cur_class == '_':
                 if (max_bg < np.inf) and (len(files) > max_bg):
                     random.shuffle(files)
@@ -43,12 +44,11 @@ def ReadAllImages(char_dir, bg_dir, char_classes,
                     random.shuffle(files)
                     files = files[0:max_per_class]
 
-
             for name in files:
                 p1,ext=os.path.splitext(name)
                 if ext!='.png':
                     continue
-                I = cv2.imread(os.path.join(imgs_dir,name))
+                I = cv2.imread(os.path.join(root,name))
                 if imgs.shape[0]==0:
                     imgs=np.zeros((I.shape[0],I.shape[1],I.shape[2],max_allocate),
                                   dtype=np.uint8)
@@ -60,6 +60,7 @@ def ReadAllImages(char_dir, bg_dir, char_classes,
 
                 labels=np.append(labels,class_index)
                 k+=1
+            break
 
     print 'Loaded %i images' % k
     imgs=imgs[:,:,:,0:k]
