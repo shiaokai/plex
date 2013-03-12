@@ -14,13 +14,13 @@ from nms import WordBbsNms
 from time import time
 from helpers import UnionBbs
 
-def WordDetector(bbs, lexicon, alphabet, max_locations = 3):
+def WordDetector(bbs, lexicon, alphabet, max_locations=3, alpha=.5 ):
     results = []
     for i in range(len(lexicon)):
         word = lexicon[i]
         # assume word is at least 3 characters long
         assert len(word) > 2
-        word_results = SolveWord(bbs, word, alphabet, max_locations)
+        word_results = SolveWord(bbs, word, alphabet, max_locations, alpha)
         if word_results is not None:
             for (word_bb, word_score, best_bbs) in word_results:
                 word_result = np.append(word_bb, [word_score, 0])
@@ -28,7 +28,7 @@ def WordDetector(bbs, lexicon, alphabet, max_locations = 3):
 
     return results
 
-def SolveWord(bbs, word, alphabet, max_locations, alpha = .5):
+def SolveWord(bbs, word, alphabet, max_locations, alpha):
     # store costs and pointers
     dp_costs = []
     dp_ptrs = []
@@ -62,7 +62,7 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha = .5):
                 for k in range(num_children):
                     child_bb = child_bbs[k]
                     # compute pairwise score
-                    score = ComputePairScore(parent_bb, child_bb)
+                    score = ComputePairScore(parent_bb, child_bb, alpha)
                     if best_child_score > score:
                         best_child_score = score
                         best_child_idx = k
@@ -84,7 +84,7 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha = .5):
                 for k in range(num_children):
                     child_bb = child_bbs[k]
                     # compute pairwise score
-                    score = ComputePairScore(parent_bb, child_bb) + dp_costs_child[k]
+                    score = ComputePairScore(parent_bb, child_bb, alpha) + dp_costs_child[k]
                     if best_child_score > score:
                         best_child_score = score
                         best_child_idx = k
@@ -160,7 +160,7 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha = .5):
     return word_results
 
     
-def ComputePairScore(parent_bb, child_bb, alpha = .5):    
+def ComputePairScore(parent_bb, child_bb, alpha):
     # TODO: if child is to left of parent, return inf cost
     
     # costs of x and y offsets

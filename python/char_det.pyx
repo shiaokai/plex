@@ -4,6 +4,8 @@
 
 from nms import BbsNms, HogResponseNms
 from hog_utils import draw_hog, ReshapeHog
+from helpers import CollapseLetterCase
+
 import cv2
 from time import time
 
@@ -26,7 +28,8 @@ cdef inline float float_min(float a, float b): return a if a <= b else b
 
 def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf,
                  canon_size, alphabet, min_height=0.1, max_height=1.0, min_pixel_height=20,
-                 step_size=np.power(2,.25), debug=False, score_thr=.25, detect_idxs=[]):
+                 step_size=np.power(2,.25), debug=False,
+                 score_thr=.25, detect_idxs=[], case_mapping=[]):
 
     assert max_height<=1.0
     '''
@@ -155,7 +158,11 @@ def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf,
         # NMS over bbs across scales
         t_nms1 = time()
         
-    bbs = BbsNms(bbs)
+    if not(case_mapping):
+        bbs = BbsNms(bbs)
+    else:
+        bbs = CollapseLetterCase(bbs, case_mapping)
+        bbs = BbsNms(bbs)
 
     if debug:
         time_nms = time() - t_nms1

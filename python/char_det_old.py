@@ -8,20 +8,23 @@ import cProfile
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from hog_utils import draw_hog, ReshapeHog
+from hog_utils_old import draw_hog, ReshapeHog
 from nms import BbsNms, HogResponseNms
 from time import time
 from sklearn.ensemble import RandomForestClassifier
 
 from sklearn.datasets import fetch_mldata
 from numpy import arange
+from helpers import CollapseLetterCase
 
 #@profile
 def CharDetector(img, hog, rf, canon_size, alphabet,
                  min_height=0.1, max_height=1.0,
                  step_size=np.power(2,.25), score_thr=.25,
                  min_pixel_height = 20,
-                 detect_idxs=[], debug=False):
+                 detect_idxs=[], debug=False,
+                 case_mapping=[]):
+
 
     assert max_height<=1.0
 
@@ -68,6 +71,7 @@ def CharDetector(img, hog, rf, canon_size, alphabet,
 
         feature_vector_3d=ReshapeHog(feature_vector, (scaled_img.shape[0],scaled_img.shape[1]),
                                      hog.blockSize, hog.winSize, hog.nbins)
+
         if debug:
             total_hog_rsh += time() - t_rsh0
 
@@ -132,8 +136,12 @@ def CharDetector(img, hog, rf, canon_size, alphabet,
         # NMS over bbs across scales
         t_nms1 = time()
         
-    bbs = BbsNms(bbs)
-
+    if not(case_mapping):
+        bbs = BbsNms(bbs)
+    else:
+        bbs = CollapseLetterCase(bbs, case_mapping)
+        bbs = BbsNms(bbs)
+        
     if debug:
         time_nms = time() - t_nms1
         print "Bbs NMS time: ", time_nms
