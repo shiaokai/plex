@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from char_det import CharDetector
 from word_det_old import WordDetector
 from display import OutputCharBbs, DrawCharBbs
-from helpers import GetCachePath
+from helpers import GetCachePath, CollapseLetterCase
 
 def WordSpot(img, lexicon, use_cache=False, img_name='', max_locations=3):
     cache_bbs_path = GetCachePath(img_name)
@@ -27,6 +27,7 @@ def WordSpot(img, lexicon, use_cache=False, img_name='', max_locations=3):
                                 settings.alphabet_master, min_height=0.03,
                                 detect_idxs=settings.detect_idxs,
                                 debug=True, score_thr=.1)
+        char_bbs = CollapseLetterCase(char_bbs, settings.case_mapping)
         if use_cache:
             with open(cache_bbs_path,'wb') as fid:
                 cPickle.dump(char_bbs,fid)

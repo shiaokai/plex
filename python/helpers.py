@@ -2,6 +2,7 @@ import settings
 import numpy as np
 import hashlib
 import os
+import pdb
 
 def GetCachePath(path):
     m = hashlib.md5()
@@ -32,7 +33,12 @@ def UnionBbs(bbs):
     u_bb = np.array([top, left, bottom - top, right - left])
     return u_bb
 
-#def CollapseLetterCase(bbs):
-'''
-Set the bbs to their capitals
-'''
+def CollapseLetterCase(bbs, mapping):
+    '''
+    Set the bbs to their capitals
+    '''
+    for i in range(bbs.shape[0]):
+        bbs[i,5] = mapping[int(bbs[i,5])]
+
+    return bbs
+
