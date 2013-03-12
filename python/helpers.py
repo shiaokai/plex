@@ -25,42 +25,35 @@ def ReadAllImages(char_dir, bg_dir, char_classes,
                 cur_class='-'+cur_class  # lowercase have minus
             imgs_dir = os.path.join(char_dir,cur_class)
 
+        filelist = []
         for root, dirs, files in os.walk(imgs_dir):
-            # add all the files within dirs to the files list
-            for cur_dir in dirs:
-                for root1, dirs1, files1 in os.walk(os.path.join(imgs_dir,cur_dir)):
-                    if not files1:
-                        break
-                    files1_with_parents = [cur_dir + os.sep + f for f in files1]
-                    files += files1_with_parents
+            add_files = [os.path.join(root, f) for f in files]
+            filelist += add_files
+        if cur_class == '_':
+            if (max_bg < np.inf) and (len(files) > max_bg):
+                random.shuffle(filelist)
+                filelist = filelist[0:max_bg]
+        else:
+            if (max_per_class < np.inf) and (len(filelist) > max_per_class):
+                random.shuffle(filelist)
+                filelist = filelist[0:max_per_class]
 
-            if cur_class == '_':
-                if (max_bg < np.inf) and (len(files) > max_bg):
-                    random.shuffle(files)
-                    files = files[0:max_bg]
-
+        for path in filelist:
+            p1,ext=os.path.splitext(path)
+            if ext!='.png':
+                continue
+            I = cv2.imread(path)
+            if imgs.shape[0]==0:
+                imgs=np.zeros((I.shape[0],I.shape[1],I.shape[2],max_allocate),
+                              dtype=np.uint8)
+            if k<max_allocate:
+                imgs[:,:,:,k]=I
             else:
-                if (max_per_class < np.inf) and (len(files) > max_per_class):
-                    random.shuffle(files)
-                    files = files[0:max_per_class]
+                print 'WARNING: loading more data than max_allocate. do something!'
+                imgs=np.concatenate((imgs,I[...,np.newaxis]),axis=3)
 
-            for name in files:
-                p1,ext=os.path.splitext(name)
-                if ext!='.png':
-                    continue
-                I = cv2.imread(os.path.join(root,name))
-                if imgs.shape[0]==0:
-                    imgs=np.zeros((I.shape[0],I.shape[1],I.shape[2],max_allocate),
-                                  dtype=np.uint8)
-                if k<max_allocate:
-                    imgs[:,:,:,k]=I
-                else:
-                    print 'WARNING: loading more data than max_allocate. do something!'
-                    imgs=np.concatenate((imgs,I[...,np.newaxis]),axis=3)
-
-                labels=np.append(labels,class_index)
-                k+=1
-            break
+            labels=np.append(labels,class_index)
+            k+=1
 
     print 'Loaded %i images' % k
     imgs=imgs[:,:,:,0:k]

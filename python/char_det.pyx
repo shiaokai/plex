@@ -38,7 +38,8 @@ def CharDetectorBatch(img_dir, output_dir, rf, canon_size, alphabet,
                       step_size=np.power(2,.25), score_thr=.25,
                       min_pixel_height = 20,
                       detect_idxs=[], debug=False,
-                      case_mapping=[], num_procs=1):
+                      case_mapping=[], num_procs=1,
+                      depth=1):
 
     # clear output_dir
     if os.path.isdir(output_dir):
@@ -46,17 +47,16 @@ def CharDetectorBatch(img_dir, output_dir, rf, canon_size, alphabet,
     os.makedirs(output_dir)
 
     jobs = []
-    for root, dirs, files in os.walk(img_dir):
-        for name in files:
-            p1,ext=os.path.splitext(name)
-            if ext!='.jpg':
-                continue
+    for name in os.listdir(img_dir):
+        p1,ext=os.path.splitext(name)
+        if ext!='.jpg':
+            continue
 
-            save_path = os.path.join(output_dir, name + '.npy')
-            job = (root, name, rf, canon_size, alphabet, detect_idxs,
-                   min_height, score_thr, save_path)
-            jobs.append(job)
-
+        save_path = os.path.join(output_dir, name + '.char')
+        job = (img_dir, name, rf, canon_size, alphabet, detect_idxs,
+               min_height, score_thr, save_path)
+        jobs.append(job)
+            
     if num_procs == 1:
         for job in jobs:
             CharDetectorBatchWorker(job)

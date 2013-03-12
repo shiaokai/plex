@@ -120,50 +120,46 @@ def Bootstrap(bs_img_dir, bs_out_dir, bg_dir, canon_size,
                       detect_idxs=detect_idxs, min_height=min_height,
                       score_thr=score_thr, num_procs=6)
 
-    last_fname = []
-    for root, dirs, files in os.walk(bs_out_dir):
-        last_fname = sorted(files)
-        last_fname = last_fname[-1]
-
-    name,ext = os.path.splitext(last_fname)
-    start_offset = int(name[1::])
-    counter = 1
+    files = os.listdir(bs_out_dir)
+    files.sort()
+    last_file,ext = os.path.splitext(files[-1])
+    start_offset = int(last_file[1::]) + 1
+    counter = 0
 
     # walk the img dir and check if temp_dir has a npy file
-    for root, dirs, files in os.walk(bs_img_dir):
-        for name in files:
-            p1,ext=os.path.splitext(name)
-            if ext!='.jpg':
-                continue
+    for name in os.listdir(bs_img_dir):
+        p1,ext=os.path.splitext(name)
+        if ext!='.jpg':
+            continue
     
-            # check if precomp file exists
-            npy_file = os.path.join(temp_dir, name + '.npy')
-            if not os.path.exists(npy_file):
-                print "no results from: ", name
-                continue
+        # check if precomp file exists
+        char_file = os.path.join(temp_dir, name + '.char')
+        if not os.path.exists(char_file):
+            print "no results from: ", name
+            continue
 
-            img = cv2.imread(os.path.join(root,name))
-            with open(npy_file,'rb') as fid:
-                bbs = cPickle.load(fid)
+        img = cv2.imread(os.path.join(bs_img_dir,name))
+        with open(char_file,'rb') as fid:
+            bbs = cPickle.load(fid)
     
-            # assume bbs sorted
-            print "Found %d in %s" % (bbs.shape[0], name)
-            for i in range(min(bbs.shape[0], max_per_image)):
-                bb = bbs[i,:]
-                # crop bb out of image
-                patch = img[bb[0]:bb[0]+bb[2],bb[1]:bb[1]+bb[3],:]
-                # save
-                new_fname = "I%05i.png" % (start_offset + counter)
-                full_fname = os.path.join(bs_out_dir, new_fname)
-                patch_100x100=cv2.resize(patch,(100,100))
-                res = cv2.imwrite(full_fname, patch_100x100)
-                counter += 1
+        # assume bbs sorted
+        print "Found %d in %s" % (bbs.shape[0], name)
+        for i in range(min(bbs.shape[0], max_per_image)):
+            bb = bbs[i,:]
+            # crop bb out of image
+            patch = img[bb[0]:bb[0]+bb[2],bb[1]:bb[1]+bb[3],:]
+            # save
+            new_fname = "I%05i.png" % (start_offset + counter)
+            full_fname = os.path.join(bs_out_dir, new_fname)
+            patch_100x100=cv2.resize(patch,(100,100))
+            res = cv2.imwrite(full_fname, patch_100x100)
+            counter += 1
 
     # clean up
     shutil.rmtree(temp_dir)
 
 def main():
-
+    '''
     # 1. train a base classifier
     rf=TrainCharClassifier(settings.alphabet_master,
                            settings.char_train_dir,
@@ -192,7 +188,7 @@ def main():
               settings.detect_idxs,
               rf,
               num_procs=settings.n_procs)
-
+    '''
     # 4. train a classifier after bootstrap
     TrainCharClassifier(settings.alphabet_master,
                         settings.char_train_dir,

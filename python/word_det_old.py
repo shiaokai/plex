@@ -24,7 +24,7 @@ def WordDetector(bbs, lexicon, alphabet, max_locations=3, alpha=.5 ):
         if word_results is not None:
             for (word_bb, word_score, best_bbs) in word_results:
                 word_result = np.append(word_bb, [word_score, 0])
-                results.append((np.expand_dims(word_result, axis = 0), best_bbs))
+                results.append((np.expand_dims(word_result, axis = 0), best_bbs, word))
 
     return results
 
