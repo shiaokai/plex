@@ -17,6 +17,9 @@ char_test_bg_dir = '/data/text/plex/msrc/test/charBg'
 img_train_dir = '/data/text/plex/icdar/train/images'
 img_test_dir = '/data/text/plex/icdar/test/images'
 
+img_train_gt_dir = '/data/text/plex/icdar/train/wordAnn'
+img_test_gt_dir = '/data/text/plex/icdar/test/wordAnn'
+
 lex0_train_dir = '/data/text/plex/icdar/train/lex0'
 lex0_test_dir = '/data/text/plex/icdar/test/lex0'
 

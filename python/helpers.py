@@ -5,6 +5,17 @@ import os
 import pdb
 import cv2
 import random
+import string
+
+def ValidateString(input):
+    # return code 1 is valid, 0 is not
+    filtered_input = [s if settings.alphabet_detect.find(s) > -1 else '' for s in input]
+    filtered_string = string.join(filtered_input,sep='')
+    filtered_string = filtered_string.upper()
+    if len(filtered_string) > 2:
+        return (1, filtered_string)
+    else:
+        return (0, filtered_string)
 
 def ReadAllImages(char_dir, bg_dir, char_classes,
                   max_per_class=np.inf, max_bg=np.inf):
@@ -87,6 +98,34 @@ def UnionBbs(bbs):
                 
     u_bb = np.array([top, left, bottom - top, right - left])
     return u_bb
+
+def BbsOverlap(bb1, bb2):
+    bb1_area = bb1[2] * bb1[3]
+    bb2_area = bb2[2] * bb2[3]
+
+    bb1_start_y = bb1[0]
+    bb1_start_x = bb1[1]
+    bb2_start_y = bb2[0]
+    bb2_start_x = bb2[1]
+
+    bb1_end_y = bb1[0] + bb1[2]
+    bb1_end_x = bb1[1] + bb1[3]
+    bb2_end_y = bb2[0] + bb2[2]
+    bb2_end_x = bb2[1] + bb2[3]
+
+    """
+    intersect divided by union
+    """
+    intersect_width = min(bb1_end_x, bb2_end_x) - max(bb1_start_x, bb2_start_x)
+    if intersect_width <= 0:
+        return 0
+    intersect_height = min(bb1_end_y, bb2_end_y) - max(bb1_start_y, bb2_start_y)
+    if intersect_width <= 0:
+        return 0
+    intersect_area = intersect_width * intersect_height
+    union_area = bb1_area + bb2_area - intersect_area
+    overlap = intersect_area / union_area
+    return overlap
 
 def CollapseLetterCase(bbs, mapping):
     '''

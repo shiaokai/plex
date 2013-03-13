@@ -32,6 +32,7 @@ def WordDetector(bbs, lexicon, alphabet, max_locations=3, alpha=.5 ):
 
     return results
 
+#@profile
 def SolveWord(bbs, word, alphabet, max_locations, alpha):
     # HACK: check that every letter in word exists in bbs
     for i in range(len(word)):
@@ -170,7 +171,9 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha):
 
     
 def ComputePairScore(parent_bb, child_bb, alpha):
-    # TODO: if child is to left of parent, return inf cost
+    if child_bb[1] < parent_bb[1]:
+        # child cannot be to the left of parent
+        return np.inf
     
     # costs of x and y offsets
     ideal_x = parent_bb[1] + parent_bb[3]
