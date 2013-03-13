@@ -4,6 +4,9 @@ import cPickle
 import numpy as np
 from helpers import ValidateString, BbsOverlap
 from operator import itemgetter
+from display import DrawEvalResults
+import matplotlib.pyplot as plt
+import cv2
 
 def ComputePrecisionRecall(gt_results, dt_results):
     assert(len(gt_results)==len(dt_results))
@@ -30,11 +33,12 @@ def ComputePrecisionRecall(gt_results, dt_results):
 
     return (precision, recall, thrs)
 
-def EvaluateWordDetection(gt_dir, dt_dir, olap_thr=.5):
-
+def EvaluateWordDetection(gt_dir, dt_dir, img_dir=[], olap_thr=.5,
+                          create_visualization=False, output_dir='eval_dbg'):
     # measure precision and recall for detection
     gt_results = []
     dt_results = []
+    fnames = []
     for gt_file in os.listdir(gt_dir):
         img_name,ext=os.path.splitext(gt_file)
         if ext!='.txt':
@@ -57,7 +61,7 @@ def EvaluateWordDetection(gt_dir, dt_dir, olap_thr=.5):
             gt_w = int(gt_parts[3])
             gt_h = int(gt_parts[4])            
 
-            gt_item = [gt_word, 0, np.array([gt_y, gt_x, gt_h, gt_w]), gt_file]
+            gt_item = [gt_word, 0, np.array([gt_y, gt_x, gt_h, gt_w])]
             gt_list.append(gt_item)
 
         # read stuff from dt file
@@ -66,7 +70,8 @@ def EvaluateWordDetection(gt_dir, dt_dir, olap_thr=.5):
             word_results = cPickle.load(fid)
         dt_list = []
         for word_result in word_results:
-            dt_item = [word_result[2], 0, word_result[0][0,0:4], word_result[0][0,4]]
+            dt_item = [word_result[2], 0, word_result[0][0,0:4],
+                       word_result[0][0,4], word_result[1]]
             dt_list.append(dt_item)
 
         # sort dt_list
@@ -97,8 +102,22 @@ def EvaluateWordDetection(gt_dir, dt_dir, olap_thr=.5):
                 
         dt_results.append(dt_list)
         gt_results.append(gt_list)
+        fnames.append(gt_file)
 
     (precision, recall, thrs) = ComputePrecisionRecall(gt_results, dt_results)
+
+    if create_visualization:
+        assert img_dir
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        for i in range(len(gt_results)):
+            gt_result = gt_results[i]
+            dt_result = dt_results[i]
+            img_name,foo = os.path.splitext(fnames[i])
+            img = cv2.imread(os.path.join(img_dir, img_name))
+            DrawEvalResults(img, gt_result, dt_result)
+            plt.savefig(os.path.join(output_dir,"%s.png" % (img_name)))
+
     return (gt_results, dt_results, precision, recall, thrs)
         
     # for each ground truth word
