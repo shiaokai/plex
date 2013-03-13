@@ -54,7 +54,7 @@ def CharDetectorBatch(img_dir, output_dir, rf, canon_size, alphabet,
 
         save_path = os.path.join(output_dir, name + '.char')
         job = (img_dir, name, rf, canon_size, alphabet, detect_idxs,
-               min_height, score_thr, save_path)
+               min_height, score_thr, save_path, case_mapping)
         jobs.append(job)
             
     if num_procs == 1:
@@ -68,13 +68,14 @@ def CharDetectorBatch(img_dir, output_dir, rf, canon_size, alphabet,
         pool.join()
     
 def CharDetectorBatchWorker(job):
-    (img_dir, name, rf, canon_size, alphabet, detect_idxs, min_height, score_thr, save_path) = job
+    (img_dir, name, rf, canon_size, alphabet, detect_idxs, min_height,
+    score_thr, save_path, case_mapping) = job
                    
     img = cv2.imread(os.path.join(img_dir,name))
     start_time = time()
     bbs = CharDetector(img, settings.hog, rf, canon_size, alphabet,
                        detect_idxs=detect_idxs, debug=False,
-                       min_height=min_height, score_thr=score_thr)
+                       min_height=min_height, score_thr=score_thr, case_mapping=case_mapping)
 
     with open(save_path,'wb') as fid:
         cPickle.dump(bbs,fid)
