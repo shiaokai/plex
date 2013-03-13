@@ -148,7 +148,7 @@ def WordBbsNms(words, overlap_thr = 0):
     for i in range(len(words)):
         cur_word = words[i]
         words_bbs[i,0:4] = cur_word[0]
-        words_bbs[i,4] = -cur_word[1]
+        words_bbs[i,4] = cur_word[1]
         words_bbs[i,5] = i
 
     words_bbs_nms = BbsNms(words_bbs, overlap_thr = overlap_thr, separate = False)

@@ -17,18 +17,29 @@ from helpers import UnionBbs
 def WordDetector(bbs, lexicon, alphabet, max_locations=3, alpha=.5 ):
     results = []
     for i in range(len(lexicon)):
-        word = lexicon[i]
+        # force word to upper case
+        word = lexicon[i].upper()
         # assume word is at least 3 characters long
         assert len(word) > 2
         word_results = SolveWord(bbs, word, alphabet, max_locations, alpha)
-        if word_results is not None:
-            for (word_bb, word_score, best_bbs) in word_results:
-                word_result = np.append(word_bb, [word_score, 0])
-                results.append((np.expand_dims(word_result, axis = 0), best_bbs, word))
+
+        if not(word_results):
+            continue
+        
+        for (word_bb, word_score, best_bbs) in word_results:
+            word_result = np.append(word_bb, [word_score, 0])
+            results.append((np.expand_dims(word_result, axis = 0), best_bbs, word))
 
     return results
 
 def SolveWord(bbs, word, alphabet, max_locations, alpha):
+    # HACK: check that every letter in word exists in bbs
+    for i in range(len(word)):
+        cur_char = word[i]
+        idx = alphabet.find(word[i])
+        if np.sum(bbs[:,5]==idx) == 0:
+            return []
+        
     # store costs and pointers
     dp_costs = []
     dp_ptrs = []
@@ -40,10 +51,11 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha):
     for i in range(len(word) - 1):
         i_proc = process_order[i]
         child_char = word[i_proc]
+        parent_char = word[i_proc-1]
+
         child_idx  = alphabet.find(child_char)
         child_bbs  = bbs[bbs[:,5]==child_idx,:]
 
-        parent_char = word[i_proc-1]
         parent_idx  = alphabet.find(parent_char)
         parent_bbs  = bbs[bbs[:,5]==parent_idx,:]
 
@@ -70,10 +82,6 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha):
                 # store min score and index
                 dp_costs_j[j] = best_child_score
                 dp_ptrs_j[j] = best_child_idx
-
-            # append to back (but later reverse)
-            dp_costs.append(dp_costs_j)
-            dp_ptrs.append(dp_ptrs_j)
         else:
             # process internal nodes
             dp_costs_child = dp_costs[i-1]
@@ -91,9 +99,10 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha):
                 # store min score and index
                 dp_costs_j[j] = best_child_score
                 dp_ptrs_j[j] = best_child_idx
-            # append to back (but later reverse)
-            dp_costs.append(dp_costs_j)
-            dp_ptrs.append(dp_ptrs_j)
+
+        # append to back (but later reverse)
+        dp_costs.append(dp_costs_j)
+        dp_ptrs.append(dp_ptrs_j)
 
     # process root
     child_char = word[1]
@@ -150,8 +159,8 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha):
                 cur_bbs[j,:] = char_bbs[bb_idx,:]
 
         word_bb = UnionBbs(cur_bbs)
-        all_word_results.append([word_bb, cur_root_score, cur_bbs])
-
+        adjusted_score = - (cur_root_score / len(word))
+        all_word_results.append([word_bb, adjusted_score, cur_bbs])
 
     # perform word-level NMS
     word_results = WordBbsNms(all_word_results)
