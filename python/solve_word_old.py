@@ -1,37 +1,27 @@
-import settings
-
-import pdb
-import os
-import random
 import numpy as np
-import cv,cv2
-import cPickle
-import cProfile
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from solve_word import SolveWord
+from helpers import UnionBbs
+from nms import WordBbsNms
 
-def WordDetector(bbs, lexicon, alphabet, max_locations=3, alpha=.5, overlap_thr=0.5):
-    results = []
-    for i in range(len(lexicon)):
-        # force word to upper case
-        word = lexicon[i].upper()
-        # assume word is at least 3 characters long
-        assert len(word) > 2
-        word_results = SolveWord(bbs, word, alphabet, max_locations, alpha, overlap_thr)
+def ComputePairScore(parent_bb, child_bb, alpha):
+    if child_bb[1] < parent_bb[1]:
+        # child cannot be to the left of parent
+        return np.inf
+    
+    # costs of x and y offsets
+    ideal_x = parent_bb[1] + parent_bb[3]
+    ideal_y = parent_bb[0]
+    cost_x = np.abs(ideal_x - child_bb[1]) / parent_bb[3]
+    cost_y = np.abs(ideal_y - child_bb[0]) / parent_bb[2]
 
-        if not(word_results):
-            continue
-        
-        for (word_bb, word_score, best_bbs) in word_results:
-            word_result = np.append(word_bb, [word_score, 0])
-            results.append((np.expand_dims(word_result, axis = 0), best_bbs, word))
+    # cost of scale difference
+    cost_scale = np.abs(parent_bb[2] - child_bb[2]) / parent_bb[2]
 
-    return results
+    # combined costs
+    cost_pair = cost_x + 2 * cost_y + cost_scale
+    cost_unary = 1 - child_bb[4]
+    return  cost_pair * alpha + cost_unary * (1 - alpha)
 
-#@profile
-"""
 def SolveWord(bbs, word, alphabet, max_locations, alpha, overlap_thr):
     # HACK: check that every letter in word exists in bbs
     for i in range(len(word)):
@@ -168,23 +158,3 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha, overlap_thr):
 
     return word_results
 
-    
-def ComputePairScore(parent_bb, child_bb, alpha):
-    if child_bb[1] < parent_bb[1]:
-        # child cannot be to the left of parent
-        return np.inf
-    
-    # costs of x and y offsets
-    ideal_x = parent_bb[1] + parent_bb[3]
-    ideal_y = parent_bb[0]
-    cost_x = np.abs(ideal_x - child_bb[1]) / parent_bb[3]
-    cost_y = np.abs(ideal_y - child_bb[0]) / parent_bb[2]
-
-    # cost of scale difference
-    cost_scale = np.abs(parent_bb[2] - child_bb[2]) / parent_bb[2]
-
-    # combined costs
-    cost_pair = cost_x + 2 * cost_y + cost_scale
-    cost_unary = 1 - child_bb[4]
-    return  cost_pair * alpha + cost_unary * (1 - alpha)
-"""
