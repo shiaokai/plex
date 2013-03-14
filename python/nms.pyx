@@ -14,7 +14,7 @@ cdef inline float float_min(float a, float b): return a if a <= b else b
 
 def HogResponseNms(np.ndarray[DTYPE_t, ndim=3] responses not None,
                    float cell_height, float cell_width,
-                   float score_thr =.25, float olap_thr=.5):
+                   float score_thr =.25, float overlap_thr=.5):
     '''
     NMS over hog response surfaces.
     NOTE: everything gets scaled up by 8 pix
@@ -33,9 +33,8 @@ def HogResponseNms(np.ndarray[DTYPE_t, ndim=3] responses not None,
     cdef int r_width = responses.shape[1]
     cdef int i
     cdef int i1_mask, i2_mask, j1_mask, j2_mask
-    cdef int mask_height = <int>(cell_height * olap_thr)
-    cdef int mask_width = <int>(cell_width * olap_thr)
-
+    cdef int mask_height = <int>(cell_height * (1 - overlap_thr))
+    cdef int mask_width = <int>(cell_width * (1 - overlap_thr))
 
     # compute NMS over each class separately
     for i in range(responses.shape[2]):
@@ -71,7 +70,7 @@ def HogResponseNms(np.ndarray[DTYPE_t, ndim=3] responses not None,
     return bbs
 
 
-def BbsNms(np.ndarray[DTYPE_t, ndim=2] bbs, overlap_thr = 0, separate = True):
+def BbsNms(np.ndarray[DTYPE_t, ndim=2] bbs, overlap_thr = 0.5, separate = True):
     '''
     NMS over bounding box list
     '''
@@ -138,7 +137,7 @@ def BbsNms(np.ndarray[DTYPE_t, ndim=2] bbs, overlap_thr = 0, separate = True):
     return bbs[keep_idxs,:]
 
 
-def WordBbsNms(words, overlap_thr = 0):
+def WordBbsNms(words, overlap_thr = 0.5):
     # words = ((wordbb, score, char_bbs))
     # create a single Bbs tuple out of words
     

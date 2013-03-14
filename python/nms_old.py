@@ -1,14 +1,14 @@
 import pdb
 import numpy as np
 
-def HogResponseNms(responses, cell_height, cell_width, score_thr = .25, olap_thr=.5):
+def HogResponseNms(responses, cell_height, cell_width, score_thr = .25, overlap_thr=.5):
     '''
     NMS over hog response surfaces.
     NOTE: everything gets scaled up by 8 pix
     '''
     '''
-    max_bbs_h = responses.shape[0] / (olap_thr * cell_height * 2)
-    max_bbs_w = responses.shape[1] / (olap_thr * cell_width * 2)
+    max_bbs_h = responses.shape[0] / (overlap_thr * cell_height * 2)
+    max_bbs_w = responses.shape[1] / (overlap_thr * cell_width * 2)
     '''
     # compute upper bound on bbs
 
@@ -33,10 +33,10 @@ def HogResponseNms(responses, cell_height, cell_width, score_thr = .25, olap_thr
             bbs[k,4] = cur_max
             bbs[k,5] = i
             
-            i1_mask = max(bbs[k,0] - cell_height * olap_thr, 0)
-            i2_mask = min(bbs[k,0] + cell_height * olap_thr, cur_response.shape[0])
-            j1_mask = max(bbs[k,1] - cell_width * olap_thr, 0)
-            j2_mask = min(bbs[k,1] + cell_width * olap_thr, cur_response.shape[1])
+            i1_mask = max(bbs[k,0] - cell_height * overlap_thr, 0)
+            i2_mask = min(bbs[k,0] + cell_height * overlap_thr, cur_response.shape[0])
+            j1_mask = max(bbs[k,1] - cell_width * overlap_thr, 0)
+            j2_mask = min(bbs[k,1] + cell_width * overlap_thr, cur_response.shape[1])
 
             cur_response[i1_mask:i2_mask, j1_mask:j2_mask]=-1
             cur_max = cur_response.max()
@@ -52,7 +52,7 @@ def HogResponseNms(responses, cell_height, cell_width, score_thr = .25, olap_thr
     bbs = np.multiply(bbs, scale_by)
     return bbs
 
-def BbsNms(bbs, overlap_thr = 0, separate = True):
+def BbsNms(bbs, overlap_thr=0.5, separate = True):
     '''
     NMS over bounding box list
     '''
@@ -104,7 +104,7 @@ def BbsNms(bbs, overlap_thr = 0, separate = True):
             keep_idxs = keep_idxs + [i]
     return bbs[keep_idxs,:]
 
-def BbsNms(bbs, overlap_thr = 0, separate = True):
+def BbsNms(bbs, overlap_thr=0.5, separate=True):
     '''
     NMS over bounding box list
     '''
@@ -156,7 +156,7 @@ def BbsNms(bbs, overlap_thr = 0, separate = True):
             keep_idxs = keep_idxs + [i]
     return bbs[keep_idxs,:]
 
-def WordBbsNms(words, overlap_thr = 0):
+def WordBbsNms(words, overlap_thr=0.5):
     # words = ((wordbb, score, char_bbs))
     # create a single Bbs tuple out of words
     

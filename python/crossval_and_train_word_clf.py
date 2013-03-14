@@ -13,21 +13,24 @@ from char_det import CharDetectorBatch
 from wordspot import WordSpot
 from word_det_old import WordDetector
 from evaluation import EvaluateWordDetection
+from time import time
 
 def WordDetectorBatchWorker(job):
-    char_file, save_path, lexicon, alpha, max_locations = job 
+    char_file, save_path, lexicon, alpha, max_locations, overlap_thr = job 
                 
     with open(char_file,'rb') as fid:
         char_bbs = cPickle.load(fid)
 
     word_results = WordDetector(char_bbs, lexicon, settings.alphabet_master,
-                                max_locations=max_locations, alpha=alpha)
+                                max_locations=max_locations, alpha=alpha,
+                                overlap_thr=overlap_thr)
 
     with open(save_path,'wb') as fid:
         cPickle.dump(word_results, fid)
     
-def WordDetectorBatch(img_dir, char_dir, output_dir, alpha, max_locations, num_procs):
+def WordDetectorBatch(img_dir, char_dir, output_dir, alpha, max_locations, overlap_thr, num_procs):
     # loop through training images
+    start_time = time()
     jobs = []        
     for name in os.listdir(img_dir):
         p1,ext=os.path.splitext(name)
@@ -49,7 +52,7 @@ def WordDetectorBatch(img_dir, char_dir, output_dir, alpha, max_locations, num_p
 
         # result path
         save_path = os.path.join(output_dir, name + '.word')
-        job = (char_file, save_path, lexicon, alpha, max_locations)
+        job = (char_file, save_path, lexicon, alpha, max_locations, overlap_thr)
         jobs.append(job)
 
 
@@ -62,6 +65,8 @@ def WordDetectorBatch(img_dir, char_dir, output_dir, alpha, max_locations, num_p
         pool.map_async(WordDetectorBatchWorker, jobs)
         pool.close()
         pool.join()
+
+    print 'Total word detector time: ', time() - start_time
 
 def CrossValidateAlpha(num_procs=1):
     '''
@@ -77,6 +82,7 @@ def CrossValidateAlpha(num_procs=1):
     temp_char_dir = 'cache/chars'
         
     # character detector params
+    overlap_thr = 0.5
     min_height = 0.05
     score_thr = 0.1
     img_dir = settings.img_train_dir
@@ -89,29 +95,26 @@ def CrossValidateAlpha(num_procs=1):
 
     # call batch chardetector
     # first run character classification in batch
-
-    """
     clf_path = settings.char_clf_name
     with open(clf_path,'rb') as fid:
         rf = cPickle.load(fid)
     CharDetectorBatch(img_dir, temp_char_dir, rf, canon_size, alphabet,
-                      detect_idxs=detect_idxs, min_height=min_height,
-                      score_thr=score_thr, num_procs=6, case_mapping=settings.case_mapping)
-    """
+                      detect_idxs=detect_idxs, min_height=min_height, min_pixel_height=10,
+                      score_thr=score_thr, num_procs=6, case_mapping=settings.case_mapping,
+                      overlap_thr=overlap_thr)
 
     alpha_range = np.linspace(0.05, .95, 10)
     #alpha_range = [.15]
     best_alpha = -1
     best_recall = -1
-    for alpha in alpha_range:
 
+    for alpha in alpha_range:
         #temp_word_dir = tempfile.mkdtemp()
         temp_word_dir = 'cache/words'
         WordDetectorBatch(settings.img_train_dir, temp_char_dir, temp_word_dir,
-                          alpha, max_locations, num_procs)
+                          alpha, max_locations, overlap_thr, num_procs)
         eval_results=EvaluateWordDetection(settings.img_train_gt_dir,
                                            temp_word_dir)
-
         gt_results = eval_results[0]
         dt_results = eval_results[1]
         precision = eval_results[2]
@@ -124,15 +127,19 @@ def CrossValidateAlpha(num_procs=1):
 
         #shutil.rmtree(temp_word_dir)
 
-    print "Best alpha = %f produced recall = %f" % (best_alpha, best_recall)
+    print 'Best alpha = %f produced recall = %f' % (best_alpha, best_recall)
 
+    
+    """
     # re-run with best alpha and optionally produce debug output
     temp_word_dir = 'cache/words'
     WordDetectorBatch(settings.img_train_dir, temp_char_dir, temp_word_dir,
-                      best_alpha, max_locations, num_procs)
+                      best_alpha, max_locations, overlap_thr, num_procs)
     eval_results=EvaluateWordDetection(settings.img_train_gt_dir,
-                                       temp_word_dir)
-
+                                       temp_word_dir,
+                                       img_dir=settings.img_train_dir,
+                                       create_visualization=True)
+                                       """
     # compute goodness of alpha: every TP match in results gets 1pt,
     # find alpha that produces most points
     #

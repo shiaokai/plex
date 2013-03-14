@@ -33,7 +33,7 @@ def ComputePrecisionRecall(gt_results, dt_results):
 
     return (precision, recall, thrs)
 
-def EvaluateWordDetection(gt_dir, dt_dir, img_dir=[], olap_thr=.5,
+def EvaluateWordDetection(gt_dir, dt_dir, img_dir=[], overlap_thr=.5,
                           create_visualization=False, output_dir='eval_dbg'):
     # measure precision and recall for detection
     gt_results = []
@@ -87,7 +87,7 @@ def EvaluateWordDetection(gt_dir, dt_dir, img_dir=[], olap_thr=.5,
                 if not(prev_dt_item[1]) or (prev_dt_item[0] != dt_item[0]):
                     continue
                 overlap = BbsOverlap(prev_dt_item[2], dt_item[2])
-                if overlap > olap_thr:
+                if overlap > overlap_thr:
                     continue
             
             # check if item overlaps with any unmatched gt_item
@@ -96,7 +96,7 @@ def EvaluateWordDetection(gt_dir, dt_dir, img_dir=[], olap_thr=.5,
                 if gt_item[1] or (gt_item[0] != dt_item[0]):
                     continue
                 overlap = BbsOverlap(gt_item[2], dt_item[2])
-                if overlap > olap_thr:
+                if overlap > overlap_thr:
                     gt_item[1] = 1
                     dt_item[1] = 1
                 
@@ -121,7 +121,7 @@ def EvaluateWordDetection(gt_dir, dt_dir, img_dir=[], olap_thr=.5,
     return (gt_results, dt_results, precision, recall, thrs)
         
     # for each ground truth word
-    #   find all detected words that overlap > olap_thr
+    #   find all detected words that overlap > overlap_thr
     #   associate with it the detected word of highest confidence
     #
 

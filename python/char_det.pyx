@@ -36,10 +36,8 @@ cdef inline float float_min(float a, float b): return a if a <= b else b
 def CharDetectorBatch(img_dir, output_dir, rf, canon_size, alphabet,
                       min_height=0.1, max_height=1.0,
                       step_size=np.power(2,.25), score_thr=.25,
-                      min_pixel_height = 20,
-                      detect_idxs=[], debug=False,
-                      case_mapping=[], num_procs=1,
-                      depth=1):
+                      min_pixel_height = 20, detect_idxs=[], debug=False,
+                      case_mapping=[], num_procs=1, overlap_thr=0.5):
 
     # clear output_dir
     if os.path.isdir(output_dir):
@@ -54,7 +52,7 @@ def CharDetectorBatch(img_dir, output_dir, rf, canon_size, alphabet,
 
         save_path = os.path.join(output_dir, name + '.char')
         job = (img_dir, name, rf, canon_size, alphabet, detect_idxs,
-               min_height, score_thr, save_path, case_mapping)
+               min_height, score_thr, save_path, case_mapping, overlap_thr)
         jobs.append(job)
             
     if num_procs == 1:
@@ -69,13 +67,14 @@ def CharDetectorBatch(img_dir, output_dir, rf, canon_size, alphabet,
     
 def CharDetectorBatchWorker(job):
     (img_dir, name, rf, canon_size, alphabet, detect_idxs, min_height,
-    score_thr, save_path, case_mapping) = job
+    score_thr, save_path, case_mapping, overlap_thr) = job
                    
     img = cv2.imread(os.path.join(img_dir,name))
     start_time = time()
     bbs = CharDetector(img, settings.hog, rf, canon_size, alphabet,
                        detect_idxs=detect_idxs, debug=False,
-                       min_height=min_height, score_thr=score_thr, case_mapping=case_mapping)
+                       min_height=min_height, score_thr=score_thr,
+                       case_mapping=case_mapping,overlap_thr=overlap_thr)
 
     with open(save_path,'wb') as fid:
         cPickle.dump(bbs,fid)
@@ -85,7 +84,8 @@ def CharDetectorBatchWorker(job):
 def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf,
                  canon_size, alphabet, min_height=0.1, max_height=1.0, min_pixel_height=20,
                  step_size=np.power(2,.25), debug=False,
-                 score_thr=.25, detect_idxs=[], case_mapping=[]):
+                 score_thr=.25, detect_idxs=[], case_mapping=[],
+                 overlap_thr=0.5):
 
     assert max_height<=1.0
     '''
@@ -187,10 +187,13 @@ def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf,
                                         dtype=DTYPE64)
             responses3d_sub = responses3d[:,:,detect_idxs]
             scaled_bbs = HogResponseNms(responses3d_sub, cell_height,
-                                        cell_width, score_thr=score_thr)
+                                        cell_width,
+                                        score_thr=score_thr,
+                                        overlap_thr=overlap_thr)
         else:
             scaled_bbs = HogResponseNms(responses3d, cell_height,
-                                        cell_width, score_thr=score_thr)
+                                        cell_width, score_thr=score_thr,
+                                        overlap_thr=overlap_thr)
         if debug:
             total_hog_nms += time() - t_nms0 
         for i in range(scaled_bbs.shape[0]):
@@ -215,10 +218,10 @@ def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf,
         t_nms1 = time()
         
     if not(case_mapping):
-        bbs = BbsNms(bbs)
+        bbs = BbsNms(bbs, overlap_thr=overlap_thr)
     else:
         bbs = CollapseLetterCase(bbs, case_mapping)
-        bbs = BbsNms(bbs)
+        bbs = BbsNms(bbs, overlap_thr=overlap_thr)
 
     if debug:
         time_nms = time() - t_nms1

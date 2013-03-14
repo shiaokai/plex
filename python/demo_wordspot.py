@@ -25,9 +25,11 @@ else:
     sys.exit(0)
 
 img = cv2.imread(img_name)
-(match_bbs, char_bbs) = WordSpot(img, lexicon, use_cache=True,
+(match_bbs, char_bbs) = WordSpot(img, lexicon, use_cache=False,
                                  img_name=img_name,
-                                 max_locations=max_locations)
+                                 max_locations=max_locations,
+                                 alpha=.15,
+                                 overlap_thr=0.25)
 
 word_bbs = np.zeros((len(match_bbs), 6))
 for i in range(len(match_bbs)):
