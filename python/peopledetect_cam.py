@@ -6,7 +6,7 @@ import pdb
 from common import clock, draw_str
 from video import create_capture
 from matplotlib.pyplot import show, imshow, figure, title
-from hog_utils import draw_hog
+from hog_utils import draw_hog2
 
 help_message = '''
 USAGE: peopledetect.py <image_names> ...
@@ -34,7 +34,7 @@ def look_at_hog(img):
     dt = clock() - t
     print 'Extraction took: %.1f ms' % (dt*1000)
     t = clock()
-    hog_viz=draw_hog(img,hog,feature_vector)
+    hog_viz=draw_hog2(img,hog,feature_vector)
     dt = clock() - t
     print 'drawing took: %.1f ms' % (dt*1000)
     return hog_viz
@@ -58,7 +58,6 @@ if __name__ == '__main__':
             vis = img.copy()
             t = clock()
             if 1:
-                pdb.set_trace()
                 vis=look_at_hog(vis)
             else:
                 found, w = hog.detectMultiScale(img, winStride=(8,8), padding=(32,32), scale=1.05)
