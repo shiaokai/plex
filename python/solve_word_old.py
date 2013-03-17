@@ -1,7 +1,7 @@
 import numpy as np
-
+import pdb
 from helpers import UnionBbs
-from nms import WordBbsNms
+from nms_old import WordBbsNms
 
 def ComputePairScore(parent_bb, child_bb, alpha):
     if child_bb[1] < parent_bb[1]:
@@ -148,9 +148,9 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha, overlap_thr):
             else:
                 cur_bbs[j,:] = char_bbs[bb_idx,:]
 
-        word_bb = UnionBbs(cur_bbs)
         adjusted_score = - (cur_root_score / len(word))
-        all_word_results.append([word_bb, adjusted_score, cur_bbs])
+        word_bb = np.append(UnionBbs(cur_bbs), adjusted_score)
+        all_word_results.append([word_bb, cur_bbs])
 
     # perform word-level NMS
     word_results = WordBbsNms(all_word_results, overlap_thr=overlap_thr)
