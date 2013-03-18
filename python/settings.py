@@ -1,6 +1,6 @@
 import numpy as np
 import cv2
-import pdb
+import os
 
 libsvm_path='/home/shiaokai/projects/third_party/libsvm/libsvm-3.16/python/'
 
@@ -34,9 +34,10 @@ lex20_test_dir = '/data/text/plex/icdar/test/lex20'
 bootstrap_img_dir = '/data/text/plex/msrc/train/images'
 bootstrap_bg_dir = '/data/text/plex/icdarBt_py/train/charBg'
 initial_char_clf_name = 'char_clf_initial.dat'
-char_clf_name = 'char_clf_final.dat'
 
-word_clf_name = 'word_clf.dat'
+project_dir = '/home/shiaokai/projects/github/plex/python'
+char_clf_name = os.path.join(project_dir, 'char_clf_final.dat')
+word_clf_name = os.path.join(project_dir, 'word_clf.dat')
 
 max_per_class = np.inf
 max_bg = 10000
@@ -49,7 +50,7 @@ score_thr=0.1
 min_height=0.05
 min_pixel_height=10
 
-fig_dir='~/Dropbox'
+fig_dir='/home/shiaokai/Dropbox'
 
 # word params
 max_locations = 5

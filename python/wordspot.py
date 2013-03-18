@@ -13,7 +13,7 @@ from helpers import GetCachePath, CollapseLetterCase
 from time import time 
 
 def WordSpot(img, lexicon, use_cache=False, img_name='', max_locations=3,
-             svm_model=None):
+             svm_model=None, rf_preload=None):
     cache_bbs_path = GetCachePath(img_name)
         
     if use_cache and os.path.exists(cache_bbs_path):
@@ -21,10 +21,12 @@ def WordSpot(img, lexicon, use_cache=False, img_name='', max_locations=3,
         with open(cache_bbs_path,'rb') as fid:
             char_bbs = cPickle.load(fid)
     else:
-        with open(settings.char_clf_name,'rb') as fid:
-            rf = cPickle.load(fid)
-        print 'Loaded character classifier'
-
+        if rf_preload is None:
+            with open(settings.char_clf_name,'rb') as fid:
+                rf = cPickle.load(fid)
+            print 'Loaded character classifier'
+        else:
+            rf = rf_preload
         # run character detection to get bbs
         char_bbs = CharDetector(img, settings.hog, rf, settings.canon_size,
                                 settings.alphabet_master, min_height=settings.min_height,
