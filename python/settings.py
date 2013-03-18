@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 import pdb
 
+libsvm_path='/home/shiaokai/projects/third_party/libsvm/libsvm-3.16/python/'
+
 hog = cv2.HOGDescriptor((16,16),(16,16),(16,16),(8,8),9,1,-1)
 canon_size = (48, 48)
 
@@ -23,19 +25,40 @@ img_test_gt_dir = '/data/text/plex/icdar/test/wordAnn'
 lex0_train_dir = '/data/text/plex/icdar/train/lex0'
 lex0_test_dir = '/data/text/plex/icdar/test/lex0'
 
+lex5_train_dir = '/data/text/plex/icdar/train/lex5'
+lex5_test_dir = '/data/text/plex/icdar/test/lex5'
+
+lex20_train_dir = '/data/text/plex/icdar/train/lex20'
+lex20_test_dir = '/data/text/plex/icdar/test/lex20'
+
 bootstrap_img_dir = '/data/text/plex/msrc/train/images'
 bootstrap_bg_dir = '/data/text/plex/icdarBt_py/train/charBg'
 initial_char_clf_name = 'char_clf_initial.dat'
 char_clf_name = 'char_clf_final.dat'
+
+word_clf_name = 'word_clf.dat'
 
 max_per_class = np.inf
 max_bg = 10000
 
 n_procs = 6
 
+# char params
+overlap_thr=0.5
+score_thr=0.1
+min_height=0.05
+min_pixel_height=10
+
+fig_dir='~/Dropbox'
+
+# word params
+max_locations = 5
+
+alpha=.15
+
 detect_idxs=[]
-for alpha in alphabet_detect:
-    detect_idxs.append(alphabet_master.find(alpha))
+for alpha0 in alphabet_detect:
+    detect_idxs.append(alphabet_master.find(alpha0))
 
 cache_dir = 'cache'
 

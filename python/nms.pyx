@@ -138,6 +138,9 @@ def BbsNms(np.ndarray[DTYPE_t, ndim=2] bbs, overlap_thr = 0.5, separate = True):
 
 
 def WordBbsNms(words, overlap_thr = 0.5):
+    if len(words)==0:
+        return []
+
     # words = ((wordbb, score, char_bbs))
     # create a single Bbs tuple out of words
     
@@ -146,8 +149,7 @@ def WordBbsNms(words, overlap_thr = 0.5):
     
     for i in range(len(words)):
         cur_word = words[i]
-        words_bbs[i,0:4] = cur_word[0]
-        words_bbs[i,4] = cur_word[1]
+        words_bbs[i,0:5] = cur_word[0]
         words_bbs[i,5] = i
 
     words_bbs_nms = BbsNms(words_bbs, overlap_thr = overlap_thr, separate = False)

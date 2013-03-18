@@ -76,7 +76,7 @@ def EvaluateWordDetection(gt_dir, dt_dir, img_dir=[], overlap_thr=.5,
 
         # sort dt_list
         dt_list = sorted(dt_list, key=itemgetter(3))
-        dt_list.reverse()
+        #dt_list.reverse()
 
         # greedily match dts to gts
         for i in range(len(dt_list)):

@@ -1,6 +1,7 @@
 import settings
 
 import pdb
+import sys
 import os
 import random
 import numpy as np
@@ -11,46 +12,50 @@ import cProfile
 import multiprocessing as mp
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from solve_word import SolveWord
+from solve_word_old import SolveWord
+from nms_old import WordBbsNms
+
+sys.path.append(settings.libsvm_path)
+import svmutil as svm
 
 def WordDetectorBatchWorker(job):
-    char_file, save_path, lexicon, alpha, max_locations, overlap_thr = job 
+    char_file, save_word_path, lexicon, alpha, max_locations, overlap_thr, apply_word_nms = job 
                 
     with open(char_file,'rb') as fid:
         char_bbs = cPickle.load(fid)
 
     word_results = WordDetector(char_bbs, lexicon, settings.alphabet_master,
                                 max_locations=max_locations, alpha=alpha,
-                                overlap_thr=overlap_thr)
+                                overlap_thr=overlap_thr, apply_word_nms=apply_word_nms)
 
-    with open(save_path,'wb') as fid:
+    with open(save_word_path,'wb') as fid:
         cPickle.dump(word_results, fid)
     
-def WordDetectorBatch(img_dir, char_dir, output_dir, alpha, max_locations, overlap_thr, num_procs, lex_dir):
+def WordDetectorBatch(img_dir, char_dir, output_dir, alpha, max_locations, overlap_thr, num_procs, lex_dir, apply_word_nms=False, svm_model=None):
+    # since we cannot pickle the svm model, let's apply it after word detector batch is done
+
     # loop through training images
     jobs = []        
     for name in os.listdir(img_dir):
-        p1,ext=os.path.splitext(name)
+        p1, ext=os.path.splitext(name)
         if ext!='.jpg':
             continue
 
         # check if precomp file exists
         char_file = os.path.join(char_dir, name + '.char')
         if not os.path.exists(char_file):
-            print "no results from: ", name
+            print 'no results from: ', name
             continue
 
-        # for tuning, just use GT as lexicon
         lex_file = os.path.join(lex_dir, name + '.txt')
         with open(lex_file, 'r') as f:
             lexicon0 = f.readlines()
         lexicon = [l.strip() for l in lexicon0]
 
         # result path
-        save_path = os.path.join(output_dir, name + '.word')
-        job = (char_file, save_path, lexicon, alpha, max_locations, overlap_thr)
+        save_word_path = os.path.join(output_dir, name + '.word')
+        job = (char_file, save_word_path, lexicon, alpha, max_locations, overlap_thr, apply_word_nms)
         jobs.append(job)
-
 
     if num_procs == 1:
         for job in jobs:
@@ -61,9 +66,40 @@ def WordDetectorBatch(img_dir, char_dir, output_dir, alpha, max_locations, overl
         pool.map_async(WordDetectorBatchWorker, jobs)
         pool.close()
         pool.join()
+    # apply SVM, if exists
+    if svm_model is not None:
+        for job in jobs:
+            char_file, word_path, lexicon, alpha, max_locations, overlap_thr, apply_word_nms = job 
+            with open(word_path,'rb') as fid:
+                word_results = cPickle.load(fid)
+            UpdateWordsWithSvm(svm_model, word_results)
+            with open(word_path,'wb') as fid:
+                cPickle.dump(word_results, fid)
+
+def UpdateWordsWithSvm(svm_model, word_results):
+    if not word_results:
+        return
+    
+    X = []
+    for i in range(len(word_results)):
+        word_result = word_results[i]
+        char_bbs = word_result[1]
+        word_score = word_result[0][0,4]
+        features = ComputeWordFeatures(char_bbs, word_score)
+        X.append(dict(zip(range(len(features)),features)))
+        
+    p_labs, p_acc, p_vals = svm.svm_predict([0]*len(X), X, svm_model, '-q')
+    labels = svm_model.get_labels()
+
+    for i in range(len(word_results)):
+        word_result = word_results[i]
+        if labels[0] < 0:
+            word_result[0][0,4] = -p_vals[i][0]
+        else:
+            word_result[0][0,4] = p_vals[i][0]
 
 def WordDetector(bbs, lexicon, alphabet, max_locations=3, alpha=.5, overlap_thr=0.5,
-                 svm=None, apply_word_nms=True):
+                 svm_model=None, apply_word_nms=False):
     results = []
     for i in range(len(lexicon)):
         # force word to upper case
@@ -75,20 +111,17 @@ def WordDetector(bbs, lexicon, alphabet, max_locations=3, alpha=.5, overlap_thr=
         if not(word_results):
             continue
         
-        for (word_bb, best_bbs) in word_results:
+        for (word_bb, char_bbs) in word_results:
             #word_result = np.append(word_bb, [word_score, 0])
-            results.append((np.expand_dims(word_bb, axis = 0), best_bbs, word))
+            results.append((np.expand_dims(word_bb, axis = 0), char_bbs, word))
 
     # check for word SVM; apply 
-    if svm is not None:
-        for result in results:
-            foo = 0
-            # TODO
-            
+    if svm_model is not None:
+        UpdateWordsWithSvm(svm_model, results)
+
     # word nms
-    #if apply_word_nms:
-    #    pdb.set_trace()
-    #    results = WordBbsNms(results)
+    if apply_word_nms:
+        results = WordBbsNms(results)
 
     return results
 
