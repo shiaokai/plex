@@ -3,6 +3,7 @@ import cv2
 import os
 
 libsvm_path='/home/shiaokai/projects/third_party/libsvm/libsvm-3.16/python/'
+swt_dir='/home/shiaokai/projects/github/ccv/bin/'
 
 hog = cv2.HOGDescriptor((16,16),(16,16),(16,16),(8,8),9,1,-1)
 canon_size = (48, 48)
