@@ -14,6 +14,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from solve_word_old import SolveWord
 from nms_old import WordBbsNms
+from svm_helpers import UpdateWordsWithSvm
 
 sys.path.append(settings.libsvm_path)
 import svmutil as svm
@@ -66,37 +67,6 @@ def WordDetectorBatch(img_dir, char_dir, output_dir, alpha, max_locations, overl
         pool.map_async(WordDetectorBatchWorker, jobs)
         pool.close()
         pool.join()
-    # apply SVM, if exists
-    if svm_model is not None:
-        for job in jobs:
-            char_file, word_path, lexicon, alpha, max_locations, overlap_thr, apply_word_nms = job 
-            with open(word_path,'rb') as fid:
-                word_results = cPickle.load(fid)
-            UpdateWordsWithSvm(svm_model, word_results)
-            with open(word_path,'wb') as fid:
-                cPickle.dump(word_results, fid)
-
-def UpdateWordsWithSvm(svm_model, word_results):
-    if not word_results:
-        return
-    
-    X = []
-    for i in range(len(word_results)):
-        word_result = word_results[i]
-        char_bbs = word_result[1]
-        word_score = word_result[0][0,4]
-        features = ComputeWordFeatures(char_bbs, word_score)
-        X.append(dict(zip(range(len(features)),features)))
-        
-    p_labs, p_acc, p_vals = svm.svm_predict([0]*len(X), X, svm_model, '-q')
-    labels = svm_model.get_labels()
-
-    for i in range(len(word_results)):
-        word_result = word_results[i]
-        if labels[0] < 0:
-            word_result[0][0,4] = -p_vals[i][0]
-        else:
-            word_result[0][0,4] = p_vals[i][0]
 
 def WordDetector(bbs, lexicon, alphabet, max_locations=3, alpha=.5, overlap_thr=0.5,
                  svm_model=None, apply_word_nms=False):

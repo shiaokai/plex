@@ -7,20 +7,16 @@ from operator import itemgetter
 from display import DrawEvalResults
 import matplotlib.pyplot as plt
 import cv2
+from word_det_old import WordDetectorBatch, ComputeWordFeatures
+from nms_old import WordBbsNms
 
-def ComputePrecisionRecall(gt_results, dt_results):
-    assert(len(gt_results)==len(dt_results))
-    # count GTs
-    total_positives = 0
-    for gt_result in gt_results:
-        total_positives += len(gt_result)
-            
-    dt_pairs=np.zeros((0,2))
-    for dt_result in dt_results:
-        for dt in dt_result:
-            dt_pairs = np.vstack((dt_pairs,
-                                  np.array([dt[3],dt[1]])))
+from svm_helpers import UpdateWordsWithSvm
+import settings
+import sys
+sys.path.append(settings.libsvm_path)
+import svmutil as svm
 
+def ComputePrecisionRecall(dt_pairs, total_positives):
     # sort dt_pairs
     dt_pairs = np.flipud(dt_pairs[dt_pairs[:,0].argsort(),:])
     
@@ -34,7 +30,8 @@ def ComputePrecisionRecall(gt_results, dt_results):
     return (precision, recall, thrs)
 
 def EvaluateWordDetection(gt_dir, dt_dir, img_dir=[], overlap_thr=.5,
-                          create_visualization=False, output_dir='eval_dbg'):
+                          create_visualization=False, output_dir='eval_dbg',
+                          svm_model=None, apply_word_nms=False):
     # measure precision and recall for detection
     gt_results = []
     dt_results = []
@@ -68,6 +65,13 @@ def EvaluateWordDetection(gt_dir, dt_dir, img_dir=[], overlap_thr=.5,
         dt_path = os.path.join(dt_dir, img_name + '.word')
         with open(dt_path,'rb') as fid:
             word_results = cPickle.load(fid)
+
+        if svm_model is not None:
+            UpdateWordsWithSvm(svm_model, word_results)
+        
+        if apply_word_nms:
+            word_results = WordBbsNms(word_results)
+
         dt_list = []
         for word_result in word_results:
             dt_item = [word_result[2], 0, word_result[0][0,0:4],
@@ -76,7 +80,6 @@ def EvaluateWordDetection(gt_dir, dt_dir, img_dir=[], overlap_thr=.5,
 
         # sort dt_list
         dt_list = sorted(dt_list, key=itemgetter(3))
-        #dt_list.reverse()
 
         # greedily match dts to gts
         for i in range(len(dt_list)):
@@ -104,7 +107,12 @@ def EvaluateWordDetection(gt_dir, dt_dir, img_dir=[], overlap_thr=.5,
         gt_results.append(gt_list)
         fnames.append(gt_file)
 
-    (precision, recall, thrs) = ComputePrecisionRecall(gt_results, dt_results)
+    # compute P-R
+    assert(len(gt_results)==len(dt_results))
+    total_positives = sum([len(gt0) for gt0 in gt_results])
+    dt_pairs = [[np.array((dt1[3], dt1[1])) for dt1 in dt0] for dt0 in dt_results if len(dt0)>0]
+    dt_pairs = np.vstack(dt_pairs)
+    (precision, recall, thrs) = ComputePrecisionRecall(dt_pairs, total_positives)
 
     if create_visualization:
         assert img_dir
@@ -129,3 +137,4 @@ def EvaluateWordDetection(gt_dir, dt_dir, img_dir=[], overlap_thr=.5,
     #   (dt, gt)
     #   dt: (word, 1/0 - match, boundingbox, confidence)
     #   gt: (word, 1/0 - match, boundingbox)
+

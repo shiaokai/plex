@@ -39,6 +39,7 @@ initial_char_clf_name = 'char_clf_initial.dat'
 project_dir = '/home/shiaokai/projects/github/plex/python'
 char_clf_name = os.path.join(project_dir, 'char_clf_final.dat')
 word_clf_name = os.path.join(project_dir, 'word_clf.dat')
+word_clf_meta_name = os.path.join(project_dir, 'word_clf_meta.dat')
 
 max_per_class = np.inf
 max_bg = 10000
@@ -46,7 +47,7 @@ max_bg = 10000
 n_procs = 6
 
 # char params
-overlap_thr=0.5
+overlap_thr=0.0
 score_thr=0.1
 min_height=0.05
 min_pixel_height=10
