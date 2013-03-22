@@ -15,7 +15,6 @@ from time import time
 def WordSpot(img, lexicon, use_cache=False, img_name='', max_locations=3,
              svm_model=None, rf_preload=None):
     cache_bbs_path = GetCachePath(img_name)
-        
     if use_cache and os.path.exists(cache_bbs_path):
         print 'Found cached character bbs'
         with open(cache_bbs_path,'rb') as fid:

@@ -12,12 +12,13 @@ import cProfile
 import multiprocessing as mp
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from solve_word_old import SolveWord
+from solve_word import SolveWord
 from nms_old import WordBbsNms
-from svm_helpers import UpdateWordsWithSvm
+from svm_helpers import UpdateWordsWithSvm, ComputeWordFeatures
 
 sys.path.append(settings.libsvm_path)
 import svmutil as svm
+from time import time
 
 def WordDetectorBatchWorker(job):
     char_file, save_word_path, lexicon, alpha, max_locations, overlap_thr, apply_word_nms = job 
@@ -25,10 +26,11 @@ def WordDetectorBatchWorker(job):
     with open(char_file,'rb') as fid:
         char_bbs = cPickle.load(fid)
 
+    #start_time = time()
     word_results = WordDetector(char_bbs, lexicon, settings.alphabet_master,
                                 max_locations=max_locations, alpha=alpha,
                                 overlap_thr=overlap_thr, apply_word_nms=apply_word_nms)
-
+    #print "Word detector time for ", char_file, " : ", time() - start_time
     with open(save_word_path,'wb') as fid:
         cPickle.dump(word_results, fid)
     
@@ -58,6 +60,7 @@ def WordDetectorBatch(img_dir, char_dir, output_dir, alpha, max_locations, overl
         job = (char_file, save_word_path, lexicon, alpha, max_locations, overlap_thr, apply_word_nms)
         jobs.append(job)
 
+    start_time = time()
     if num_procs == 1:
         for job in jobs:
             WordDetectorBatchWorker(job)
@@ -67,16 +70,21 @@ def WordDetectorBatch(img_dir, char_dir, output_dir, alpha, max_locations, overl
         pool.map_async(WordDetectorBatchWorker, jobs)
         pool.close()
         pool.join()
+    print "Total word detector time: ", time() - start_time
 
 def WordDetector(bbs, lexicon, alphabet, max_locations=3, alpha=.5, overlap_thr=0.5,
-                 svm_model=None, apply_word_nms=False):
+                 svm_model=None, apply_word_nms=False, timeout=120):
     results = []
+    start_time = time()    
     for i in range(len(lexicon)):
         # force word to upper case
         word = lexicon[i].upper()
         # assume word is at least 3 characters long
         assert len(word) > 2
         word_results = SolveWord(bbs, word, alphabet, max_locations, alpha, overlap_thr)
+        if (time() - start_time) > timeout:
+            print "TIMED OUT WORD DET!"
+            break
 
         if not(word_results):
             continue
@@ -95,6 +103,7 @@ def WordDetector(bbs, lexicon, alphabet, max_locations=3, alpha=.5, overlap_thr=
 
     return results
 
+"""
 def ComputeWordFeatures(char_bbs, word_score):
     # 1. features based on raw scores
     #    - median/mean of character scores
@@ -131,5 +140,5 @@ def ComputeWordFeatures(char_bbs, word_score):
 
     # TODO: pairwise features?
     return feature_vector
-
+"""
 

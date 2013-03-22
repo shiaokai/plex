@@ -40,6 +40,7 @@ project_dir = '/home/shiaokai/projects/github/plex/python'
 char_clf_name = os.path.join(project_dir, 'char_clf_final.dat')
 word_clf_name = os.path.join(project_dir, 'word_clf.dat')
 word_clf_meta_name = os.path.join(project_dir, 'word_clf_meta.dat')
+word_clf_poly_name = os.path.join(project_dir, 'word_clf_poly.dat')
 
 max_per_class = np.inf
 max_bg = 10000

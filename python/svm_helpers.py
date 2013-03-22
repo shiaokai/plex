@@ -1,3 +1,4 @@
+
 import sys
 import settings
 sys.path.append(settings.libsvm_path)
@@ -52,7 +53,7 @@ def CrossValidate(Y, X, param, k_folds=5):
     neg_acc = neg_acc / k_folds
     return (pos_acc, neg_acc)
     
-def TrainSvmLinear2(Y, X, sweep_c=range(-2,15)):
+def TrainSvmLinear2(Y, X, sweep_c=range(-2,18)):
     num_positives = float(Y.count(1))
     num_negatives = float(Y.count(-1))
 
@@ -113,7 +114,7 @@ def TrainSvmLinear(Y, X, sweep_c=range(-2,8)):
     pdb.set_trace()
     return svm_model
 
-def TrainSvmPoly2(Y, X, sweep_c=range(-5,15)):
+def TrainSvmPoly2(Y, X, sweep_c=range(-2,18)):
     num_positives = float(Y.count(1))
     num_negatives = float(Y.count(-1))
 
@@ -265,4 +266,41 @@ def UpdateWordsWithSvm(svm_model, word_results):
             word_result[0][0,4] = -p_vals[i][0]
         else:
             word_result[0][0,4] = p_vals[i][0]
+
+def ComputeWordFeatures(char_bbs, word_score):
+    # 1. features based on raw scores
+    #    - median/mean of character scores
+    #    - min/max of character scores
+    feature_vector = np.array(word_score)
+    feature_vector = np.append(feature_vector, np.median(char_bbs[:,4]))
+    feature_vector = np.append(feature_vector, np.mean(char_bbs[:,4]))
+    feature_vector = np.append(feature_vector, np.min(char_bbs[:,4]))
+    feature_vector = np.append(feature_vector, np.max(char_bbs[:,4]))
+    feature_vector = np.append(feature_vector, np.std(char_bbs[:,4]))
+
+    # 2. features based on length of string
+    feature_vector = np.append(feature_vector, char_bbs.shape[0])
+
+    # 3. features based on global layout
+    #    - min/max of horizontal/vertical spaces
+    x_diffs = char_bbs[1::,1] - char_bbs[0:-1,1]
+    mean_width = np.mean(char_bbs[:,3])
+    y_diffs = char_bbs[:,0] - np.mean(char_bbs[:,0])
+    mean_height = np.mean(char_bbs[:,2])
+    # standard deviation of horizontal gaps
+    feature_vector = np.append(feature_vector, np.std(x_diffs / mean_width))
+    # standard deviation of vertical variation
+    feature_vector = np.append(feature_vector, np.std(y_diffs / mean_height))
+    # max horizontal gap
+    feature_vector = np.append(feature_vector, np.max(x_diffs / mean_width))
+    # max vertical gap
+    feature_vector = np.append(feature_vector, np.max(y_diffs / mean_height))
+
+    # 4. features based on scale variation
+    mean_scale = np.mean(char_bbs[:,2])
+    feature_vector = np.append(feature_vector, np.std(char_bbs[:,2] / mean_scale))
+    feature_vector = np.append(feature_vector, np.max(char_bbs[:,2] / mean_scale))
+
+    # TODO: pairwise features?
+    return feature_vector
 

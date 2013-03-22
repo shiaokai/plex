@@ -3,6 +3,7 @@ import pdb
 from helpers import UnionBbs
 from nms_old import WordBbsNms
 
+#@profile
 def ComputePairScore(parent_bb, child_bb, alpha):
     if child_bb[1] < parent_bb[1]:
         # child cannot be to the left of parent
@@ -11,17 +12,28 @@ def ComputePairScore(parent_bb, child_bb, alpha):
     # costs of x and y offsets
     ideal_x = parent_bb[1] + parent_bb[3]
     ideal_y = parent_bb[0]
-    cost_x = np.abs(ideal_x - child_bb[1]) / parent_bb[3]
-    cost_y = np.abs(ideal_y - child_bb[0]) / parent_bb[2]
+    #cost_x = np.abs(ideal_x - child_bb[1]) / parent_bb[3]
+    #cost_y = np.abs(ideal_y - child_bb[0]) / parent_bb[2]
+    cost_x = (ideal_x - child_bb[1]) / parent_bb[3]
+    if cost_x < 0:
+        cost_x = - cost_x
+
+    cost_y = (ideal_y - child_bb[0]) / parent_bb[2]    
+    if cost_y < 0:
+        cost_y = - cost_y
 
     # cost of scale difference
-    cost_scale = np.abs(parent_bb[2] - child_bb[2]) / parent_bb[2]
+    #cost_scale = np.abs(parent_bb[2] - child_bb[2]) / parent_bb[2]
+    cost_scale = (parent_bb[2] - child_bb[2]) / parent_bb[2]
+    if cost_scale < 0:
+        cost_scale = - cost_scale
 
     # combined costs
     cost_pair = cost_x + 2 * cost_y + cost_scale
     cost_unary = 1 - child_bb[4]
     return  cost_pair * alpha + cost_unary * (1 - alpha)
 
+#@profile
 def SolveWord(bbs, word, alphabet, max_locations, alpha, overlap_thr):
     # HACK: check that every letter in word exists in bbs
     for i in range(len(word)):

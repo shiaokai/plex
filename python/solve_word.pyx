@@ -4,6 +4,44 @@ cimport numpy as np
 from helpers import UnionBbs
 from nms import WordBbsNms
 
+cdef inline float float_abs(float a): return a if a > 0 else -a
+
+
+cdef inline FilterChildren(parent_bb, child_bbs, max_x_range=5, max_y_range=5, max_s_range=5):
+
+    valid_left_edge = parent_bb[1]
+    valid_right_edge = parent_bb[1] + max_x_range * parent_bb[3]
+
+    valid_top_edge = parent_bb[0] - max_y_range * parent_bb[2]
+    valid_bot_edge = parent_bb[0] + max_y_range * parent_bb[2]
+
+    valid_min_height = parent_bb[2] * (1.0 / max_s_range)
+    valid_max_height = parent_bb[2] * max_s_range
+
+    valid_idxs = np.arange(child_bbs.shape[0])
+
+    # filter x-dimension
+
+    valid = np.nonzero(child_bbs[valid_idxs,1] >= valid_left_edge)[0]
+    valid_idxs = valid_idxs[valid]
+
+    valid = np.nonzero(child_bbs[valid_idxs,1] < valid_right_edge)[0]
+    valid_idxs = valid_idxs[valid]
+
+    # filter y-dimension
+    valid = np.nonzero(child_bbs[valid_idxs,0] > valid_top_edge)[0]
+    valid_idxs = valid_idxs[valid]
+    valid = np.nonzero(child_bbs[valid_idxs,0] < valid_bot_edge)[0]
+    valid_idxs = valid_idxs[valid]
+
+    # filter scale
+    valid = np.nonzero(child_bbs[valid_idxs,2] > valid_min_height)[0]
+    valid_idxs = valid_idxs[valid]
+    valid = np.nonzero(child_bbs[valid_idxs,2] < valid_max_height)[0]
+    valid_idxs = valid_idxs[valid]
+    
+    return valid_idxs
+
 cdef inline ComputePairScore_inl(parent_bb, child_bb, alpha):
     if child_bb[1] < parent_bb[1]:
         # child cannot be to the left of parent
@@ -11,12 +49,13 @@ cdef inline ComputePairScore_inl(parent_bb, child_bb, alpha):
     
     # costs of x and y offsets
     ideal_x = parent_bb[1] + parent_bb[3]
-    ideal_y = parent_bb[0]
-    cost_x = np.abs(ideal_x - child_bb[1]) / parent_bb[3]
-    cost_y = np.abs(ideal_y - child_bb[0]) / parent_bb[2]
+    ideal_y = parent_bb[0] + .5 * parent_bb[2] # center of y-axis
+
+    cost_x = float_abs(ideal_x - child_bb[1]) / parent_bb[3]
+    cost_y = float_abs(ideal_y - (child_bb[0]+.5*child_bb[2])) / parent_bb[2]
 
     # cost of scale difference
-    cost_scale = np.abs(parent_bb[2] - child_bb[2]) / parent_bb[2]
+    cost_scale = float_abs(parent_bb[2] - child_bb[2]) / parent_bb[2]
 
     # combined costs
     cost_pair = cost_x + 2 * cost_y + cost_scale
@@ -51,7 +90,6 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha, overlap_thr):
         parent_bbs  = bbs[bbs[:,5]==parent_idx,:]
 
         num_parents = parent_bbs.shape[0]
-        num_children = child_bbs.shape[0]
 
         dp_costs_j = -1 * np.ones(num_parents)
         dp_ptrs_j = -1 * np.ones(num_parents)
@@ -60,9 +98,11 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha, overlap_thr):
             # process leaf nodes
             for j in range(num_parents):
                 parent_bb = parent_bbs[j,:]
+                valid_bbs_idx = FilterChildren(parent_bb, child_bbs)
+
                 best_child_score = np.inf
                 best_child_idx = -1
-                for k in range(num_children):
+                for k in valid_bbs_idx:
                     child_bb = child_bbs[k]
                     # compute pairwise score
                     score = ComputePairScore_inl(parent_bb, child_bb, alpha)
@@ -78,9 +118,10 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha, overlap_thr):
             dp_costs_child = dp_costs[i-1]
             for j in range(num_parents):
                 parent_bb = parent_bbs[j,:]
+                valid_bbs_idx = FilterChildren(parent_bb, child_bbs)
                 best_child_score = np.inf
                 best_child_idx = -1
-                for k in range(num_children):
+                for k in valid_bbs_idx:
                     child_bb = child_bbs[k]
                     # compute pairwise score
                     score = ComputePairScore_inl(parent_bb, child_bb, alpha) + dp_costs_child[k]
@@ -105,7 +146,6 @@ def SolveWord(bbs, word, alphabet, max_locations, alpha, overlap_thr):
     root_bbs  = bbs[bbs[:,5]==root_idx,:]
 
     num_roots = root_bbs.shape[0]
-    num_children = child_bbs.shape[0]
     
     dp_costs_j = -1 * np.ones(num_roots)
     dp_ptrs_j = -1 * np.ones(num_roots)

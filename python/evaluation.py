@@ -7,10 +7,10 @@ from operator import itemgetter
 from display import DrawEvalResults
 import matplotlib.pyplot as plt
 import cv2
-from word_det_old import WordDetectorBatch, ComputeWordFeatures
+from word_det_old import WordDetectorBatch
 from nms_old import WordBbsNms
 
-from svm_helpers import UpdateWordsWithSvm
+from svm_helpers import UpdateWordsWithSvm, ComputeWordFeatures
 import settings
 import sys
 sys.path.append(settings.libsvm_path)
