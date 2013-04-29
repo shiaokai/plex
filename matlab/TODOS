@@ -1,0 +1,3 @@
+- move swt+abbyy code into a similar format as
+  produceResultsFromScratch
+- clean out old, subsumed files like genPrCurves
