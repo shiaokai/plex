@@ -1,9 +1,8 @@
-function runPipeline(params)
+function produceResultsFromScratch(params)
 % Run everything from scratch
 %
-% This function first trains FERNS using images for each character class
-% and their provided background class. It also does another round of
-% training after bootstrapping more negative examples.
+% Flags control the different steps to reproduce. Paths within globals
+% specify where outputs will be stored.
 %
 % CREDITS
 %  Written and maintained by Kai Wang and Boris Babenko
@@ -18,6 +17,10 @@ tune_word_detector = 1;
 train_word_classifier = 1;
 eval_word_detector = 1;
 produce_figures = 1;
+
+% -----
+% begin processing
+% -----
 
 RandStream.getGlobalStream.reset();
 cfg=globals(params);
@@ -43,7 +46,8 @@ end
 
 % train word classifier
 if train_word_classifier
-  wdClf=trainWordClassifier(cfg,fModel,alpha);
+  precomputeCharDetection(cfg, fModel);
+  wdClf=trainWordClassifier(cfg,alpha);
 else
   res=load(cfg.getWdClfPath()); wdClf=res.wdClf; alpha=res.alpha;
 end
@@ -218,7 +222,7 @@ save(cfg.resCharClf(),'y','yh','y1','yh1','msg3','msg4');
 end
 
 % evaluate character detector
-function fModel=evalCharDetector(cfg,fModel)
+function fModel=precomputeCharDetection(cfg,fModel)
 
 fprintf('Eval character detector.\n');
 trnD=cfg.train;
@@ -399,7 +403,7 @@ end
 
 % sweep alpha value for word detection, keep alpha that yields weighted
 % fscore
-function wdClf=trainWordClassifier(cfg,fModel,alpha)
+function wdClf=trainWordClassifier(cfg,alpha)
 
 fprintf('Eval word detector\n');
 trnD=cfg.train;

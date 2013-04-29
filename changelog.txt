@@ -1,3 +1,9 @@
+Version 1.04 (4-28-2013)
+- refactored code so that reproducing from scratch is easier
+- moved source to github
+- separated matlab code into its own folder
+- added beginnings of python project
+
 Version 1.03 (09-26-2012)
 - updated various pieces to handles changes from Piotr's toolbox 3.01
 

@@ -10,4 +10,5 @@ cfg.lex='lex';
 cfg.lex0='lex';
 cfg.test_type='';
 
+% use parfor or not
 cfg.has_par=1;

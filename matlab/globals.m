@@ -72,12 +72,9 @@ switch hostname
       case 'shiaokai'
         cfg.dPath='/data/text/plex/';
         cfg.dBox='/home/shiaokai/Dropbox/res';
-      case 'kai'
-        cfg.dPath='/users/u1/kai/sharedata/plex/';
+      otherwise
+        error('Need to fill this in on new machines!');
     end
-  case 'symmetry'
-    cfg.dPath='/home/shiaokai/data/';
-    cfg.dBox='/home/shiaokai/Dropbox/res';
   otherwise
     error('Need to fill this in on new machines!');
 end
@@ -106,8 +103,12 @@ cfg.progress_prefix=@create_progress_name;
 cfg.getName=@()getName(cfg);
 cfg.getClfPath=@()getClfPath(cfg);
 cfg.getWdClfPath=@()getWdClfPath(cfg);
+
+% result locations for character classification eval
 cfg.resCharClf=@()resCharClf(cfg);
+% result locations for character detection eval
 cfg.resCharDet=@()resCharDet(cfg);
+% result locations for wordspot eval
 cfg.resWordspot=@()resWordspot(cfg);
 end
 
@@ -127,9 +128,6 @@ fname=['progress_',cur_pos.name,'_'];
 end
 
 function fname=getName(cfg)
-% dfs={'S',6,'M',256,'trnSet','train','trnT','charHard','bgDir','none',...
-%   'nBg',5000,'nTrn',Inf};
-% [S,M,trnSet,trnT,bgDir,nBg,nTrn]=getPrmDflt(varargin,dfs,1);
 
 S=cfg.S; M=cfg.M; 
 trnD=cfg.train; trnT=cfg.train_type;

@@ -10,4 +10,5 @@ cfg.lex='lex50';
 cfg.lex0='lex0';
 cfg.test_type='charHard';
 
-cfg.has_par=0;
+% use parfor or not
+cfg.has_par=1;
