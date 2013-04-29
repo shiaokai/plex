@@ -1,9 +1,77 @@
+matlab
+- refactor code into 3 main functions
+  - preprocessData
+  - produceBaselinesFromScratch
+  - produceResultsFromScratch
+
+python
+- get accuracy up; work on character detector
+
 CTRL-F for images
+  - try different settings for random forest clf, limit depth
+  - train with synth
+  - make sure some bugocr examples work then email Chris Snyder
+  - dafuq is going on with the svm memory leak?
+
+Setup street view viewer
+
+Recall:
+- min_height, overlap, score_thr
+(.05, 0.5, .25): 2.35%
+(.05, 0.5, .15): 24.9%
+
+(.05, 0, .1): 32.7%
+(.05, 0.5, .1): 42.1%
+(.05, 0, .05): 37.9%
+(.05, 0.5, .05): WORD REC TOO SLOW TO FINISH!
+
+Accuracy improvements:
+- double spatial resolution of character detector
+  - change call to hog extract and reshape
+
+Speed improvements:
+- multiprocessing for detection across scale
+- limit dp search to characters within X units of width/height/scale
+- finish cythonizing solve_word
+  - old time: 162s
+  - cython
+    - no changes: 155s
+    - inline scoring: 146s
+    - types: ???
+
+Oddities
+- for some reason the HOG in opencv doesn't have 4 normalizations
+
+Notes
+- higher score the better for characters and words
+- all parameters need to be reviewed, overlap, score, etc.
+
+DONE
 - [DONE] hog feature extraction
-- character classification
-  - train ferns
-
-
+- [DONE] character classification
+  - [DONE] train random forest demo
+  - [DONE] re-think helper function to readAllImgs
+  - [DONE] repro ICDAR [a-zA-Z0-9] experiment
+- character detection
+  - [DONE] debug why the results are so shitty
+  - [DONE] shift the bbs!
+  - [DONE] multiscale
+  - [later] split up code into modules
+    - move configurations into settings.py
+    - train_character_classifier.py: training and bootstrapping
+    - character_detection.py: sliding window etc. probably called
+      within training for boostrapping
+    - word_detection.py: takes in BBs and produces word candidates
+    - train_from_scratch.py: redos everything
+  - [DONE] integrate this into character classifier bootstrapping
+  - [DONE] implement proper scale sweep ranges
+  - [DONE] implement PICT DP
+  - cross validation for alpha value
+    - [DONE] implement Precision-Recall computation:
+    - [DONE] optional visualizations
+    - remove the hardcoded tmp dirs when this is done
+  - [DONE] update the pyx functions to reflect word_bb changes
+  - [DONE] get FLASK demo working
 
 
 
