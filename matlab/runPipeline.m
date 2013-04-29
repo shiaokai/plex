@@ -11,46 +11,50 @@ function runPipeline(params)
 %  Changelog: changelog.txt
 %  Please email kaw006@cs.ucsd.edu if you have questions.
 
-RandStream.getGlobalStream.reset();
+% Flags
+train_character_classifier = 1;
+eval_character_classifier = 0;
+tune_word_detector = 1;
+train_word_classifier = 1;
+eval_word_detector = 1;
+produce_figures = 1;
 
+RandStream.getGlobalStream.reset();
 cfg=globals(params);
 
-if(exist(cfg.getClfPath(),'file'))
-  res=load(cfg.getClfPath()); fModel=res.fModel;
-else
+% train character classifier
+if train_character_classifier
   fModel=trainClassifier(cfg);
+else
+  res=load(cfg.getClfPath()); fModel=res.fModel;
 end
 
-if 1
+% test character classifier
+if eval_character_classifier
   evalCharClassifier(cfg,fModel);
 end
 
-if 1
-  % tune classifier by discovering max and operating point
-  evalCharDetector(cfg,fModel);
-end
-
-if 1
-  % cross validate on training data for word detection parameters
+% cross validate on training data for word detection parameters
+if tune_word_detector
   alpha=crossValWordDP(cfg);
 else
   res=load(cfg.getWdClfPath()); alpha=res.alpha;  
 end
-  
-if 1
-  % train word classifier using parameters
+
+% train word classifier
+if train_word_classifier
   wdClf=trainWordClassifier(cfg,fModel,alpha);
 else
   res=load(cfg.getWdClfPath()); wdClf=res.wdClf; alpha=res.alpha;
 end
 
-if 1
-  % evaluate everything on test
+% evaluate everything on test set
+if eval_word_detector
   evalWordSpot(cfg,fModel,wdClf,alpha);
 end
 
-if 1
-  % produce PR curve
+% produce PR curve
+if produce_figures
   genFigures(cfg);
 end
 
@@ -492,10 +496,15 @@ evalDir=fullfile(cfg.dPath,cfg.test,'test');
 lexDir=fullfile(evalDir,cfg.lex);
 
 % set up output locations
-d1=fullfile(evalDir,['res-' trnD '-svm'],cNm,'images');
+d1=fullfile(evalDir,['res-' trnD],cNm,'images');
+d1_svm=fullfile(evalDir,['res-' trnD '-svm'],cNm,'images');
 
 if(exist(d1,'dir')), rmdir(d1,'s'); end
 mkdir(d1);
+
+if(exist(d1_svm,'dir')), rmdir(d1_svm,'s'); end
+mkdir(d1_svm);
+
 saveRes=@(f,words,t1,t2,t3)save(f,'words','t1','t2','t3');
 
 nImg=length(dir(fullfile(evalDir,'wordAnn','*.txt')));
@@ -515,6 +524,7 @@ end
 
 parfor f=0:nImg-1
   sF=fullfile(d1,sprintf('I%05d.mat',f));
+  sF_svm=fullfile(d1_svm,sprintf('I%05d.mat',f));
   I=imread(fullfile(evalDir,'images',sprintf('I%05i.jpg',f)));
   lexF=fullfile(lexDir,sprintf('I%05i.jpg.txt',f));
   if(exist(lexF,'file'))
@@ -527,9 +537,10 @@ parfor f=0:nImg-1
   end
 
   t3S=tic; 
-  [words,t1,t2]=wordSpot(I,lexS,fModel,wdClf,{},{},{'alpha',alpha}); 
+  [words,words_svm,t1,t2]=wordSpot(I,lexS,fModel,wdClf,{},{},{'alpha',alpha}); 
   t3=toc(t3S);
   saveRes(sF,words,t1,t2,t3);  
+  saveRes(sF_svm,words_svm,t1,t2,t3);  
   
   if has_par,t=getCurrentTask(); tStr=num2str(t.ID); else tStr=''; end
   dt = datestr(now,'mmmm dd, yyyy HH:MM:SS.FFF AM');
@@ -540,10 +551,8 @@ if has_par, matlabpool close; end
 
 end
 
-function genFigures(cfg)
+function [xs,ys,fs,thr]=getPlotInfo(cfg, evalDir, resD)
 
-evalDir=fullfile(cfg.dPath,cfg.test,'test');
-resD=fullfile(['res-' cfg.train '-svm'],cfg.getName());
 gtDir=fullfile(evalDir,'wordAnn');
 dtDir=fullfile(evalDir,resD,'images');
 lexDir=fullfile(evalDir,cfg.lex);
@@ -552,12 +561,29 @@ pNms=struct('thr',-inf,'ovrDnm','min','overlap',.5); pNms.type='max';
 evalPrm={'thr',.5,'imDir',iDir,'f0',1,'f1',inf,'lexDir',lexDir,...
   'pNms',pNms};
 [gt,dt,gtW,dtW] = evalReading(gtDir,dtDir,evalPrm{:});
-
 [xs,ys,sc]=bbGt('compRoc', gt, dt, 0);
 [fs,~,~,idx]=Fscore(xs,ys);
+thr=sc(idx);
+end
+
+function genFigures(cfg)
+
+evalDir=fullfile(cfg.dPath,cfg.test,'test');
+
+% no rescoring
+resD=fullfile(['res-' cfg.train],cfg.getName());
+[xs,ys,fs,thr]=getPlotInfo(cfg, evalDir, resD);
+
+% with rescoring
+resD=fullfile(['res-' cfg.train '-svm'],cfg.getName());
+[xs_svm,ys_svm,fs_svm,thr_svm]=getPlotInfo(cfg, evalDir, resD);
+
 figure(1); clf;
-plot(xs,ys,'Color',rand(3,1),'LineWidth',3);
-lgs={sprintf('[%1.3f] thr=%1.3f',fs,sc(idx))};
+plot(xs,ys,'Color','g','LineWidth',3);
+hold on
+plot(xs_svm,ys_svm,'Color','b','LineWidth',3);
+lgs={sprintf('[%1.3f] thr=%1.3f',fs,thr),...
+  sprintf('[%1.3f] thr=%1.3f',fs_svm,thr_svm)};
 legend(lgs,'Location','SouthWest','FontSize',14);
 savefig(cfg.resWordspot(),'pdf');
 save(cfg.resWordspot(),'xs','ys');

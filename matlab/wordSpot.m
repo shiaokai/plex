@@ -1,4 +1,4 @@
-function [words,t1,t2,bbs]=wordSpot(I,lexS,fModel,wordSvm,nmsPrms,frnPrms,plxPrms)
+function [words,words_svm,t1,t2,bbs]=wordSpot(I,lexS,fModel,wordSvm,nmsPrms,frnPrms,plxPrms)
 % Function for End-to-end word spotting function
 %
 % Full description can be found in: 
@@ -47,8 +47,8 @@ bbs=bbNms(bbs,nmsPrms);
 t2S=tic; words=wordDet('plexApply',bbs,cfg.ch1,lex,plxPrms); t2=toc(t2S);
 if ~isempty(wordSvm)
   % if available, score using SVM
-  %for i=1:length(words), words(i).bb(:,5)=-words(i).bb(:,5); end
-  words=wordNms(words,wordSvm);
-  %for i=1:length(words), words(i).bb(:,5)=-words(i).bb(:,5); end
+  words_svm=wordNms(words,wordSvm);
+else
+  words_svm=[];
 end
 
