@@ -1,8 +1,9 @@
 function produceResultsFromScratch(params)
 % Run everything from scratch
 %
-% Flags control the different steps to reproduce. Paths within globals
-% specify where outputs will be stored.
+% It is assumed that preprocessData has already been run. Flags control the
+% different steps to reproduce. Paths within globals specify where outputs
+% will be stored.
 %
 % CREDITS
 %  Written and maintained by Kai Wang and Boris Babenko
@@ -12,7 +13,7 @@ function produceResultsFromScratch(params)
 
 % Flags
 train_character_classifier = 1;
-eval_character_classifier = 0;
+eval_character_classifier = 1;
 tune_word_detector = 1;
 train_word_classifier = 1;
 eval_word_detector = 1;
