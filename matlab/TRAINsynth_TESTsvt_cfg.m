@@ -6,7 +6,7 @@ cfg.train='synth';
 % background dataset
 cfg.train_bg='msrc';
 % name of the character folder
-cfg.train_type='char';
+cfg.train_type='charHard';
 
 % test set
 cfg.test='svt';
