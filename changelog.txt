@@ -1,5 +1,5 @@
 Version 1.04 (4-28-2013)
-- refactored code so that reproducing from scratch is easier
+- refactored code so that reproducing from scratch is easier; updated README
 - moved source to github
 - separated matlab code into its own folder
 - added beginnings of python project

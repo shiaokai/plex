@@ -4,7 +4,7 @@ This code repository has the following subdirectories:
 our ICCV 2011 paper. Check that directory for details.
 
 ./python: This contains a re-implementation of the matlab code into
-python.
+python. This is a work in progress.
 
 ./server: This contains code that sets up a demo web server to call
 the python code.
