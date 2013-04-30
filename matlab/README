@@ -116,7 +116,17 @@ II. REPRODUCE RESULTS
 
    - Prepare the raw folders to put them into a common format
 
-2. Run code
+2. Pick one of the configuration settings:
+  - TRAINsynth_TESTicdar_cfg.m : synthetic data for training, icdar
+    for testing
+  - TRAINsynth_TESTsvt_cfg.m : synthetic data for training, svt
+    for testing
+  - TRAINicdar_TESTicdar_cfg.m : icdar data for training, icdar
+    for testing
+  - TRAINicdar_TESTsvt_cfg.m : icdar data for training, svt
+    for testing
+
+3. Run code
   >> preprocessData
-  >> produceResultsFromScratch
+  >> produceResultsFromScratch(TRAINsynth_TESTsvt_cfg)
  

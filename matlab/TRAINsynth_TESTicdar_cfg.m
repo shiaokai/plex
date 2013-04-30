@@ -1,12 +1,12 @@
-function cfg=TRAINicdar_TESTicdar_cfg
+function cfg=TRAINsynth_TESTicdar_cfg
 
 cfg=struct();
 % training set
-cfg.train='icdar';
+cfg.train='synth';
 % background dataset
-cfg.train_bg='icdar';
+cfg.train_bg='msrc';
 % name of the character folder
-cfg.train_type='charHard';
+cfg.train_type='char';
 
 % test set
 cfg.test='icdar';
