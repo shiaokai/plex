@@ -14,6 +14,7 @@ function produceResultsFromScratch(params)
 % Flags
 train_character_classifier = 1;
 eval_character_classifier = 1;
+precomp_character_detections = 1;
 tune_word_detector = 1;
 train_word_classifier = 1;
 eval_word_detector = 1;
@@ -38,6 +39,10 @@ if eval_character_classifier
   evalCharClassifier(cfg,fModel);
 end
 
+if precomp_character_detections
+  precomputeCharDetection(cfg, fModel);  
+end
+
 % cross validate on training data for word detection parameters
 if tune_word_detector
   alpha=crossValWordDP(cfg);
@@ -47,7 +52,6 @@ end
 
 % train word classifier
 if train_word_classifier
-  precomputeCharDetection(cfg, fModel);
   wdClf=trainWordClassifier(cfg,alpha);
 else
   res=load(cfg.getWdClfPath()); wdClf=res.wdClf; alpha=res.alpha;
@@ -342,11 +346,12 @@ for i=1:length(sweep), cur_alpha=sweep(i);
   parfor f=0:nImg-1
     sF=fullfile(d1,sprintf('I%05d.mat',f));
     
-    lexF=fullfile(lexDir,sprintf('I%05i.jpg.txt',f));
+    lexF=fullfile(lexDir,sprintf('I%05i.jpg.txt',f)); lex = [];
     if(exist(lexF,'file'))
       fid=fopen(lexF,'r');
-      temp=textscan(fid,'%s'); lex0=temp{1}';
+      temp=textscan(fid,'%s'); lex_gt=temp{1}';
       fclose(fid);
+      lex=wordDet('build',lex_gt);
     else
       error('feels bad man.');
     end
@@ -355,7 +360,6 @@ for i=1:length(sweep), cur_alpha=sweep(i);
     charCache=load(fullfile(cachedCharDir,sprintf('I%05d.mat',f)));
     bbs=charCache.bbs;
     
-    lex=wordDet('build',lex0);
     t1S=tic; words=wordDet('plexApply',bbs,cfg.ch1,lex,{'alpha',cur_alpha}); t1=toc(t1S);
     % store result
     saveRes(sF,words);
@@ -379,8 +383,6 @@ for i=1:length(sweep), cur_alpha=sweep(i);
     tpSum = tpSum + sum(dt1(dt1(:,6)==1,5));
     fpSum = fpSum + sum(dt1(dt1(:,6)==0,5));
   end
-  
-  fprintf('Margin diff [higher is better]= %f,\n',tpSum-fpSum);  
   
   % FSCORE
   pNms=struct('thr',-inf,'ovrDnm','min','overlap',.5); pNms.type='max';
@@ -442,6 +444,7 @@ end
 parfor f=0:nImg-1
   sF=fullfile(d1,sprintf('I%05d.mat',f));
   lexF=fullfile(lexDir,sprintf('I%05i.jpg.txt',f));
+  lex=[];
   if(exist(lexF,'file'))
     fid=fopen(lexF,'r');
     lexS=textscan(fid,'%s'); lexS=lexS{1}';
@@ -532,6 +535,7 @@ parfor f=0:nImg-1
   sF_svm=fullfile(d1_svm,sprintf('I%05d.mat',f));
   I=imread(fullfile(evalDir,'images',sprintf('I%05i.jpg',f)));
   lexF=fullfile(lexDir,sprintf('I%05i.jpg.txt',f));
+  lexS='';
   if(exist(lexF,'file'))
     fid=fopen(lexF,'r');
     res=textscan(fid,'%s');
