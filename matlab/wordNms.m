@@ -48,9 +48,11 @@ if(~strcmp(type,'none'))
   words=words(kp);
   wbb1=reshape([words.bb],5,[])';
   outWords=words(wbb1(:,5)>thr);
+  wbb1=wbb1(wbb1(:,5)>thr,:);
 else
   wbb1=reshape([words.bb],5,[])';
   outWords=words(wbb1(:,5)>thr);
+  wbb1=wbb1(wbb1(:,5)>thr,:);
 end
 
 % sort in descending order

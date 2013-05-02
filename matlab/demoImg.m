@@ -20,23 +20,18 @@ im(I); drawnow;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % word threshold
 % character fern
-%%%% clfPath=fullfile('data','fern_synth.mat');
-clfPath='/data/text/plex/synth1000/clfs/fern_inlineS6M256trnSetsynth1000trnTcharbgDirmsrcnBg5000nTrnInf.mat';
-
+clfPath=fullfile('data','fern_synth.mat');
 if(~exist(clfPath,'file')), error('FERN DOES NOT EXIST?!\n'); end
 dat=load(clfPath); fModel=dat.fModel;
 
 % word svm
-%%%%%svmPath=fullfile('data','svm_svt.mat');
-svmPath='/data/text/plex/synth1000/clfs/fern_inlineS6M256trnSetsynth1000trnTcharbgDirmsrcnBg5000nTrnInf_svt_wclf.mat';
+svmPath=fullfile('data','svm_svt.mat');
 if(~exist(svmPath,'file')), error('SVM MODEL DOES NOT EXIST?!\n'); end
 dat=load(svmPath); wdClf=dat.wdClf; alpha=dat.alpha; wdClf.thr=-1;
-%wordSvm=model.pNms1; wordSvm.thr=wordThr;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Run word recognition (PLEX)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-tic; words=wordSpot(I,lexS,fModel,wdClf,{},{'minH',.04},{'alpha',alpha}); toc
-
-wordDetDraw( words, 1, 1, 1, [0 1 0] );
+tic; [~,words_svm]=wordSpot(I,lexS,fModel,wdClf,{},{},{'alpha',alpha}); toc
+wordDetDraw( words_svm, 1, 1, 1, [0 1 0] );
 
