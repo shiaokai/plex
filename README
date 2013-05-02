@@ -1,10 +1,14 @@
 This code repository has the following subdirectories:
 
-./matlab: This contains everything needed to reproduce the results from
-our ICCV 2011 paper. Check that directory for details.
+./matlab: This directory contains everything needed to reproduce most
+of the results from our ICCV 2011 paper. The code in this directory is
+mostly the same as what appears at
+(http://vision.ucsd.edu/~kai/grocr/), but after some clean-up. Check
+that directory for details.
 
 ./python: This contains a re-implementation of the matlab code into
-python. This is a work in progress.
+Python. This is a work in progress.
 
 ./server: This contains code that sets up a demo web server to call
-the python code.
+the python code and a baseline pipeline of Stroke Width Transform
+(LIBCCV) with Tesseract OCR.
