@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <style type="text/css">
+      html { height: 100% }
+      body { height: 100%; margin: 0; padding: 0 }
+      #map_canvas { height: 100% }
+    </style>
+<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyAE-rQou056mdU7tTHQ1I00m8lDueUtz-A&libraries=places&sensor=false"></script>
+    <script type="text/javascript"  src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript"  src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.1/jquery-ui.min.js"></script>
+
+    <style type="text/css">
+      html { height: 100% }
+      body { height: 100%; margin: 0; padding: 0 }
+      div.control_panel
+      {
+      padding: 5px;
+      margin: 10px;
+      border: 1px dashed #968895;
+      }
+    </style>
+
+    <script type="text/javascript">
+      var map = '';
+      var map_places = '';
+      var panoClient;
+      function initialize(){ 
+        panoClient = new google.maps.StreetViewService();
+        lat = 32.754455;
+        lon = -117.215924;
+        loadMaps(lat, lon);
+        loadPlaces(lat, lon);        
+        $('#geoloc').keypress(function(e){
+        if (e.which == 13) {
+          search_geolocation();
+        }
+      });
+      }
+      function search_geolocation(){
+               latlon = $('#geoloc').val().split(",")
+               lat = parseFloat(latlon[0]);
+               lon = parseFloat(latlon[1]);
+ 	       loadMaps(lat, lon);
+           loadPlaces(lat, lon);        
+      }
+      function detect_words(){
+      javascript: console.log($('#map_canvas').width())
+      javascript: console.log($('#map_canvas').height())
+      javascript: console.log(map.getPov().heading) // yaw
+      javascript: console.log(map.getPov().pitch) // pitch
+      javascript: console.log(map.getZoom()) // zoom level; map to hfov values
+      javascript: console.log(map.getPano()) // pitch      
+      javascript: console.log(map.getPhotographerPov().heading) // pitch      
+      $.ajax({
+        type: 'POST',
+        url: 'http://ballotscan.ucsd.edu:5000/svt_listener',
+        crossDomain: true,
+        data: {"width":     $('#map_canvas').width(),
+               "height":    $('#map_canvas').height(),
+               "yaw":       map.getPov().heading,
+               "pitch":     map.getPov().pitch,
+               "zoom":      map.getZoom(),
+               "pano":      map.getPano(),
+               "car-yaw": map.getPhotographerPov().heading},
+        dataType: "json",
+        complete: function (xhr, status) {
+          if (status === 'error' || !xhr.responseText) {
+            javascript: console.log('still error')
+          } else {
+            var result_url = jQuery.parseJSON(xhr.responseText).result_url
+            window.open(result_url)
+          }
+        }
+        });
+      }
+      function loadMaps(lat, lon){
+	latlon = new google.maps.LatLng(lat, lon);
+        panoClient.getPanoramaByLocation(latlon, 49, setPanoData);
+      }
+      function loadPlaces(lat, lon){
+        var map_places;
+        var latlon = new google.maps.LatLng(lat, lon);
+        map_places = new google.maps.Map(document.getElementById('map-canvas'), {
+          mapTypeId: google.maps.MapTypeId.ROADMAP,
+          center: latlon,
+          zoom: 15
+        });
+        var request = {
+          location: latlon,
+          radius: 100,
+          types: ['restaurant']
+        };
+        var service = new google.maps.places.PlacesService(map_places);
+        service.nearbySearch(request, places_callback);
+      }
+      function places_callback(results, status) {
+        var div = document.getElementById('output')
+        var business_text = ''
+        if (status == google.maps.places.PlacesServiceStatus.OK) {
+          for (var i = 0; i < results.length; i++) {
+             business_text = business_text + results[i].name + ' '
+            //javascript: console.log()
+          }
+        }
+        div.innerHTML = business_text
+      }      
+      function setPanoData(panoData,gstatus) {
+        var panoramaOptions = getPanoOption(panoData.location.latLng.lat(), panoData.location.latLng.lng());
+        map = new google.maps.StreetViewPanorama(document.getElementById("map_canvas"), panoramaOptions);
+	google.maps.event.addListener(map, 'pano_changed', function() {
+      	    var panoCell = document.getElementById('map_canvas');
+	    // TODO: this is the panoid which we will use it to download image at the backend
+     	    //alert(map.getPano());
+  	});
+	// map is the Google street view handle
+      }
+      function getPanoOption(lat, lon){
+        var pos = new google.maps.LatLng(lat, lon);
+        var panoramaOptions = {
+          position: pos,
+          scrollwheel: false,
+          pov: {
+            zoom:1,
+            heading: 0,
+            pitch: 0
+          }
+        };
+        return panoramaOptions;
+      }
+      
+    </script>
+  </head>
+  <body id="body" onload="initialize()">
+    <div id = "large_container" style="width:1250px; height:1100px">
+    <div id = "container" style="width:1000px; height:1100px; float:left">
+
+    <div class="control_panel" id="control_panel" style="width:980px; height:40px; margin:5px">
+    Geolocation: <input id="geoloc" type="text" name="fname" >
+    <button type="button" onclick="search_geolocation()">search</button>
+    <button type="button" onclick="detect_words()">detect</button>
+    </div>
+    
+    <div id="map-canvas" style="width:1px; height:1px;"></div>
+    <div id="map_canvas" style="width:1000px; height:600px;"></div>
+    </div>
+    
+    <div id="output" style="width:200px; height:850px; float:right; margin: 10px; border: 1px dashed #968895;">
+       
+    </div>
+    </div>
+  </body>
+</html>

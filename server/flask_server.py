@@ -17,6 +17,8 @@ from web_wordspot import WebWordspot
 sys.path.append(settings.libsvm_path)
 import svmutil as svm
 
+import urllib
+
 with open(settings.char_clf_name,'rb') as fid:
     rf = cPickle.load(fid)
 print 'Pre-loaded character classifier'
@@ -29,7 +31,7 @@ svm_model=(svm_clf,min_max)
 app = Flask(__name__)
 app.config['CTRL_F_UPLOAD_FOLDER'] = '/var/www/plex'
 app.config['SVT_UPLOAD_FOLDER'] = '/var/www/svt'
-app.debug = False
+app.debug = True
 @app.route('/')
 def hello_world():
     return 'Hello World!'
@@ -41,10 +43,16 @@ def hello_world():
 def hello_svt():
     return render_template('svt_viewer.html')
 
+@app.route('/svt_result', methods=['GET'])
+def show_result():
+    orig_image = request.args['orig_image']
+    result_image = request.args['result_image']
+    return render_template('result.html', orig_image=orig_image, result_image=result_image)
+
 @app.route('/svt_listener', methods=['GET', 'POST'])
 def svt_listener_url():
 
-    zoom_to_hfov = {'1':90, '2':50, '3':35}
+    zoom_to_hfov = {'1':90, '2':45, '3':25, '4':15}
 
     pano_id = request.form['pano']
     car_yaw = float(request.form['car-yaw'])
@@ -61,9 +69,16 @@ def svt_listener_url():
     # call SWT+TESS for now
     
     call_swt_tess(img_cutout_filename, img_result_filename)
+
     
-    r1 = {'result_url':url_for('svt_viewer_file',
-                               filename=os.path.basename(img_result_filename))}
+    params = urllib.urlencode({'orig_image': url_for('svt_viewer_file',
+                                                     filename=os.path.basename(img_cutout_filename)),
+                               'result_image': url_for('svt_viewer_file',
+                                                       filename=os.path.basename(img_result_filename))})
+    result_page = "/svt_result?%s" % params
+    #r1 = {'result_url':url_for('svt_viewer_file',
+    #                           filename=os.path.basename(img_result_filename))}
+    r1 = {'result_url': result_page}
     return jsonify(r1)
 
 
