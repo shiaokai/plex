@@ -19,7 +19,7 @@ import cv2
 #from python.maps.tileSystem import *
 import sys
 import pdb
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 
 # Note: code stolen from Tsung-Yi Lin!
 

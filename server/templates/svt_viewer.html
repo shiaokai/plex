@@ -26,6 +26,7 @@
       var map = '';
       var map_places = '';
       var panoClient;
+      var business_text = ''
       function initialize(){ 
         panoClient = new google.maps.StreetViewService();
         lat = 32.754455;
@@ -63,7 +64,8 @@
                "pitch":     map.getPov().pitch,
                "zoom":      map.getZoom(),
                "pano":      map.getPano(),
-               "car-yaw": map.getPhotographerPov().heading},
+               "car-yaw": map.getPhotographerPov().heading,
+               "business-text": business_text},
         dataType: "json",
         complete: function (xhr, status) {
           if (status === 'error' || !xhr.responseText) {
@@ -97,7 +99,7 @@
       }
       function places_callback(results, status) {
         var div = document.getElementById('output')
-        var business_text = ''
+        business_text = ''
         if (status == google.maps.places.PlacesServiceStatus.OK) {
           for (var i = 0; i < results.length; i++) {
              business_text = business_text + results[i].name + ' '

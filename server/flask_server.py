@@ -31,7 +31,7 @@ svm_model=(svm_clf,min_max)
 app = Flask(__name__)
 app.config['CTRL_F_UPLOAD_FOLDER'] = '/var/www/plex'
 app.config['SVT_UPLOAD_FOLDER'] = '/var/www/svt'
-app.debug = True
+app.debug = False
 @app.route('/')
 def hello_world():
     return 'Hello World!'
@@ -68,13 +68,10 @@ def svt_listener_url():
     img_result_filename = img_cutout_filename + '_result.jpg'
     # call SWT+TESS for now
     
+    print 'business search result: ', request.form['business-text']
     call_swt_tess(img_cutout_filename, img_result_filename)
-
     
-    params = urllib.urlencode({'orig_image': url_for('svt_viewer_file',
-                                                     filename=os.path.basename(img_cutout_filename)),
-                               'result_image': url_for('svt_viewer_file',
-                                                       filename=os.path.basename(img_result_filename))})
+    params = urllib.urlencode({'orig_image': url_for('svt_viewer_file', filename=os.path.basename(img_cutout_filename)), 'result_image': url_for('svt_viewer_file', filename=os.path.basename(img_result_filename))})
     result_page = "/svt_result?%s" % params
     #r1 = {'result_url':url_for('svt_viewer_file',
     #                           filename=os.path.basename(img_result_filename))}
