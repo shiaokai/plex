@@ -13,7 +13,7 @@ import multiprocessing as mp
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from solve_word import SolveWord
-from nms_old import WordBbsNms
+from nms import WordBbsNms
 from svm_helpers import UpdateWordsWithSvm, ComputeWordFeatures
 
 sys.path.append(settings.libsvm_path)
