@@ -1,7 +1,7 @@
 import numpy as np
 import pdb
 from helpers import UnionBbs
-from nms_old import WordBbsNms
+from nms import WordBbsNms
 
 #@profile
 def ComputePairScore(parent_bb, child_bb, alpha):
