@@ -46,7 +46,7 @@
  	       loadMaps(lat, lon);
            loadPlaces(lat, lon);        
       }
-      function detect_words(){
+      function detect_with_swt_tess(){
       javascript: console.log($('#map_canvas').width())
       javascript: console.log($('#map_canvas').height())
       javascript: console.log(map.getPov().heading) // yaw
@@ -56,7 +56,38 @@
       javascript: console.log(map.getPhotographerPov().heading) // pitch      
       $.ajax({
         type: 'POST',
-        url: 'http://ballotscan.ucsd.edu:5000/svt_listener',
+        url: 'http://ballotscan.ucsd.edu:5000/svt_run_swt_tess',
+        crossDomain: true,
+        data: {"width":     $('#map_canvas').width(),
+               "height":    $('#map_canvas').height(),
+               "yaw":       map.getPov().heading,
+               "pitch":     map.getPov().pitch,
+               "zoom":      map.getZoom(),
+               "pano":      map.getPano(),
+               "car-yaw": map.getPhotographerPov().heading,
+               "business-text": business_text},
+        dataType: "json",
+        complete: function (xhr, status) {
+          if (status === 'error' || !xhr.responseText) {
+            javascript: console.log('still error')
+          } else {
+            var result_url = jQuery.parseJSON(xhr.responseText).result_url
+            window.open(result_url)
+          }
+        }
+        });
+      }
+      function detect_with_plex(){
+      javascript: console.log($('#map_canvas').width())
+      javascript: console.log($('#map_canvas').height())
+      javascript: console.log(map.getPov().heading) // yaw
+      javascript: console.log(map.getPov().pitch) // pitch
+      javascript: console.log(map.getZoom()) // zoom level; map to hfov values
+      javascript: console.log(map.getPano()) // pitch      
+      javascript: console.log(map.getPhotographerPov().heading) // pitch      
+      $.ajax({
+        type: 'POST',
+        url: 'http://ballotscan.ucsd.edu:5000/svt_run_plex',
         crossDomain: true,
         data: {"width":     $('#map_canvas').width(),
                "height":    $('#map_canvas').height(),
@@ -138,18 +169,20 @@
     <div id = "large_container" style="width:1250px; height:1100px">
     <div id = "container" style="width:1000px; height:1100px; float:left">
 
-    <div class="control_panel" id="control_panel" style="width:980px; height:40px; margin:5px">
+    <div class="control_panel" id="control_panel" style="width:980px; height:60px; margin:5px">
     Geolocation: <input id="geoloc" type="text" name="fname" >
-    <button type="button" onclick="search_geolocation()">search</button>
-    <button type="button" onclick="detect_words()">detect</button>
+    <button type="button" onclick="search_geolocation()">Jump to GPS coordinate</button>
+    <br>
+    <button type="button" onclick="detect_with_swt_tess()">Run SWT+TESS</button>
+    <button type="button" onclick="detect_with_plex()">Run PLEX</button>
     </div>
-    
+    <br>
+    <b>Business search results:</b> <br><div id="output" style="width:800px; height:50px; float:left; margin: 10px; border: 1px dashed #968895;"></div>
+
     <div id="map-canvas" style="width:1px; height:1px;"></div>
     <div id="map_canvas" style="width:1000px; height:600px;"></div>
     </div>
     
-    <div id="output" style="width:200px; height:850px; float:right; margin: 10px; border: 1px dashed #968895;">
-       
     </div>
     </div>
   </body>
