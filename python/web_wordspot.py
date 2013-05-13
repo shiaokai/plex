@@ -17,10 +17,10 @@ from wordspot import WordSpot
 sys.path.append(settings.libsvm_path)
 import svmutil as svm
 
-def WebWordspot(img_name, lexicon, max_locations, result_path, rf, svm_model=None,
+def WebWordspot(img_name, lexicon, max_locations, result_path, rf, alpha, svm_model=None,
                 debug_img_name=None):
     img = cv2.imread(img_name)    
-    (match_bbs, char_bbs) = WordSpot(img, lexicon, use_cache=True, img_name=img_name,
+    (match_bbs, char_bbs) = WordSpot(img, lexicon, alpha, use_cache=False, img_name=img_name,
                                      max_locations=max_locations, svm_model=svm_model,
                                      rf_preload=rf)
 
