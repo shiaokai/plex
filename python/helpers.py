@@ -26,7 +26,7 @@ def ReadAllImages(char_dir, bg_dir, char_classes,
     imgs=np.zeros(0)
     labels=np.zeros(0)
     k = 0
-    max_allocate=5e4
+    max_allocate=1e5
     for class_index in range(len(char_classes)):
         cur_class = char_classes[class_index]
         if cur_class == '_':
