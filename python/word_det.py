@@ -19,6 +19,7 @@ from svm_helpers import UpdateWordsWithSvm, ComputeWordFeatures
 sys.path.append(settings.libsvm_path)
 import svmutil as svm
 from time import time
+import shutil
 
 def WordDetectorBatchWorker(job):
     char_file, save_word_path, lexicon, alpha, max_locations, overlap_thr, apply_word_nms = job 
@@ -26,16 +27,20 @@ def WordDetectorBatchWorker(job):
     with open(char_file,'rb') as fid:
         char_bbs = cPickle.load(fid)
 
-    #start_time = time()
+    start_time = time()
     word_results = WordDetector(char_bbs, lexicon, settings.alphabet_master,
                                 max_locations=max_locations, alpha=alpha,
                                 overlap_thr=overlap_thr, apply_word_nms=apply_word_nms)
-    #print "Word detector time for ", char_file, " : ", time() - start_time
     with open(save_word_path,'wb') as fid:
         cPickle.dump(word_results, fid)
     
 def WordDetectorBatch(img_dir, char_dir, output_dir, alpha, max_locations, overlap_thr, num_procs, lex_dir, apply_word_nms=False, svm_model=None):
     # since we cannot pickle the svm model, let's apply it after word detector batch is done
+
+    # clear output_dir
+    if os.path.isdir(output_dir):
+        shutil.rmtree(output_dir)
+    os.makedirs(output_dir)
 
     # loop through training images
     jobs = []        
@@ -102,43 +107,4 @@ def WordDetector(bbs, lexicon, alphabet, max_locations=3, alpha=.5, overlap_thr=
         results = WordBbsNms(results)
 
     return results
-
-"""
-def ComputeWordFeatures(char_bbs, word_score):
-    # 1. features based on raw scores
-    #    - median/mean of character scores
-    #    - min/max of character scores
-    feature_vector = np.array(word_score)
-    feature_vector = np.append(feature_vector, np.median(char_bbs[:,4]))
-    feature_vector = np.append(feature_vector, np.mean(char_bbs[:,4]))
-    feature_vector = np.append(feature_vector, np.min(char_bbs[:,4]))
-    feature_vector = np.append(feature_vector, np.max(char_bbs[:,4]))
-    feature_vector = np.append(feature_vector, np.std(char_bbs[:,4]))
-
-    # 2. features based on length of string
-    feature_vector = np.append(feature_vector, char_bbs.shape[0])
-
-    # 3. features based on global layout
-    #    - min/max of horizontal/vertical spaces
-    x_diffs = char_bbs[1::,1] - char_bbs[0:-1,1]
-    mean_width = np.mean(char_bbs[:,3])
-    y_diffs = char_bbs[:,0] - np.mean(char_bbs[:,0])
-    mean_height = np.mean(char_bbs[:,2])
-    # standard deviation of horizontal gaps
-    feature_vector = np.append(feature_vector, np.std(x_diffs / mean_width))
-    # standard deviation of vertical variation
-    feature_vector = np.append(feature_vector, np.std(y_diffs / mean_height))
-    # max horizontal gap
-    feature_vector = np.append(feature_vector, np.max(x_diffs / mean_width))
-    # max vertical gap
-    feature_vector = np.append(feature_vector, np.max(y_diffs / mean_height))
-
-    # 4. features based on scale variation
-    mean_scale = np.mean(char_bbs[:,2])
-    feature_vector = np.append(feature_vector, np.std(char_bbs[:,2] / mean_scale))
-    feature_vector = np.append(feature_vector, np.max(char_bbs[:,2] / mean_scale))
-
-    # TODO: pairwise features?
-    return feature_vector
-"""
 
