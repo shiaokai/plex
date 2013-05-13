@@ -1,7 +1,3 @@
-# cython: profile=True
-# cython: boundscheck=False
-# cython: wraparound=False
-
 import numpy as np
 cimport numpy as np
 DTYPE = np.float64
