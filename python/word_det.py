@@ -28,9 +28,10 @@ def WordDetectorBatchWorker(job):
         char_bbs = cPickle.load(fid)
 
     start_time = time()
-    word_results = WordDetector(char_bbs, lexicon, settings.alphabet_master,
-                                max_locations=max_locations, alpha=alpha,
-                                overlap_thr=overlap_thr, apply_word_nms=apply_word_nms)
+    word_results = WordDetector(char_bbs, lexicon, settings.alphabet_master, alpha,
+                                max_locations=max_locations,
+                                overlap_thr=overlap_thr,
+                                apply_word_nms=apply_word_nms)
     with open(save_word_path,'wb') as fid:
         cPickle.dump(word_results, fid)
     
@@ -77,7 +78,7 @@ def WordDetectorBatch(img_dir, char_dir, output_dir, alpha, max_locations, overl
         pool.join()
     print "Total word detector time: ", time() - start_time
 
-def WordDetector(bbs, lexicon, alphabet, max_locations=3, alpha=.5, overlap_thr=0.5,
+def WordDetector(bbs, lexicon, alphabet, alpha, max_locations=3, overlap_thr=0.5,
                  svm_model=None, apply_word_nms=False, timeout=120):
     results = []
     start_time = time()    

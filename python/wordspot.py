@@ -1,18 +1,17 @@
 import sys
 import os
 import cv2
-import settings
 import cPickle
 import pdb
 import matplotlib.pyplot as plt
 
-from char_det_old import CharDetector
-from word_det_old import WordDetector
+from char_det import CharDetector
+from word_det import WordDetector
 from display import OutputCharBbs, DrawCharBbs
 from helpers import GetCachePath, CollapseLetterCase
 from time import time 
 
-def WordSpot(img, lexicon, use_cache=False, img_name='', max_locations=3,
+def WordSpot(img, lexicon, alpha, settings, use_cache=False, img_name='', max_locations=3,
              svm_model=None, rf_preload=None):
     cache_bbs_path = GetCachePath(img_name)
     if use_cache and os.path.exists(cache_bbs_path):
@@ -38,9 +37,10 @@ def WordSpot(img, lexicon, use_cache=False, img_name='', max_locations=3,
                 cPickle.dump(char_bbs,fid)
 
     start_time = time()
-    word_bbs = WordDetector(char_bbs, lexicon, settings.alphabet_master,
-                            max_locations=max_locations, alpha=settings.alpha,
-                            overlap_thr=settings.overlap_thr, svm_model=svm_model)
+    word_bbs = WordDetector(char_bbs, lexicon, settings.alphabet_master, alpha,
+                            max_locations=max_locations,
+                            overlap_thr=settings.overlap_thr,
+                            svm_model=svm_model)
     print 'Word detector time: ', time() - start_time
     return (word_bbs, char_bbs)
 
