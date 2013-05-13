@@ -10,14 +10,14 @@ import multiprocessing as mp
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from hog_utils_old import draw_hog, ReshapeHog
+from hog_utils import draw_hog, ReshapeHog
 from nms import BbsNms, HogResponseNms
 from time import time
-from sklearn.ensemble import RandomForestClassifier
 
-from sklearn.datasets import fetch_mldata
 from numpy import arange
 from helpers import CollapseLetterCase
+
+from skimage import transform as ski_transform
 
 import settings
 
@@ -56,17 +56,19 @@ def CharDetectorBatch(img_dir, output_dir, rf, canon_size, alphabet,
     
 def CharDetectorBatchWorker(job):
     (img_dir, name, rf, canon_size, alphabet, detect_idxs, min_height, score_thr, save_path, case_mapping, overlap_thr) = job
-                   
+
+    t_start = time()                   
     img = cv2.imread(os.path.join(img_dir,name))
     bbs = CharDetector(img, settings.hog, rf, canon_size, alphabet,
                        detect_idxs=detect_idxs, debug=False,
                        min_height=min_height, score_thr=score_thr,
                        case_mapping=case_mapping, overlap_thr=overlap_thr)
 
+    print name, ' ', time() - t_start
     with open(save_path,'wb') as fid:
         cPickle.dump(bbs,fid)
 
-    print name
+
 
 #@profile
 def CharDetector(img, hog, rf, canon_size, alphabet,
@@ -82,7 +84,7 @@ def CharDetector(img, hog, rf, canon_size, alphabet,
     Try to call RF just once to see if its any faster
     '''
     # loop over scales
-    bbs = np.zeros(0)
+    bbs = np.zeros((0,6))
     if debug:
         total_hog_nms = 0
         total_rf = 0
@@ -103,17 +105,18 @@ def CharDetector(img, hog, rf, canon_size, alphabet,
 
     for scale_power in range(start_scale, end_scale):
         scale = np.power(step_size, scale_power)
-
         if (canon_size[0] / scale) < min_pixel_height:
             continue
 
+        opencv_start = time()        
         new_size = (int(scale * img.shape[1]),int(scale * img.shape[0]))
-        scaled_img=cv2.resize(img,new_size)
+        scaled_img=cv2.resize(img,new_size,interpolation=cv.CV_INTER_CUBIC)
 
         if debug:
             t_cmp0 = time()
 
         feature_vector=hog.compute(scaled_img, winStride=(16,16), padding=(0,0))
+
 
         if debug:
             total_hog_cmp += time() - t_cmp0
@@ -127,7 +130,7 @@ def CharDetector(img, hog, rf, canon_size, alphabet,
 
         i_windows = feature_vector_3d.shape[0]-cell_height+1
         j_windows = feature_vector_3d.shape[1]-cell_width+1
-        responses2 = np.zeros((i_windows * j_windows, len(alphabet)))
+        responses = np.zeros((i_windows * j_windows, len(alphabet)))
 
         feature_window_stack = np.zeros((i_windows * j_windows, cell_height*cell_width*9))
 
@@ -141,27 +144,30 @@ def CharDetector(img, hog, rf, canon_size, alphabet,
         if debug:
             t_det0 = time()
 
+
         pb = rf.predict_proba(feature_window_stack)
 
         if debug:
             time_det0 = time() - t_det0
             total_rf += time_det0
 
-        responses2[:,rf.classes_.tolist()] = pb
-        responses2=responses2.reshape((i_windows, -1, len(alphabet)))
+        responses[:,rf.classes_.tolist()] = pb
+        responses_3d=responses.reshape((i_windows, -1, len(alphabet)))
         # NMS over responses
         if debug:
             t_nms0 = time()
 
+
         if len(detect_idxs)>0:
-            responses_subset = np.zeros((responses2.shape[0],
-                                         responses2.shape[1], len(detect_idxs)))
-            responses_subset = responses2[:,:,detect_idxs]
+            responses_subset = np.zeros((responses_3d.shape[0],
+                                         responses_3d.shape[1], len(detect_idxs)))
+            responses_subset = responses_3d[:,:,detect_idxs]
             scaled_bbs = HogResponseNms(responses_subset, cell_height, cell_width,
                                         score_thr=score_thr, overlap_thr=overlap_thr)
         else:
-            scaled_bbs = HogResponseNms(responses2, cell_height, cell_width,
+            scaled_bbs = HogResponseNms(responses_3d, cell_height, cell_width,
                                         score_thr=score_thr, overlap_thr=overlap_thr)
+
 
         if debug:
             total_hog_nms += time() - t_nms0 
@@ -171,11 +177,10 @@ def CharDetector(img, hog, rf, canon_size, alphabet,
             scaled_bbs[i,2] = scaled_bbs[i,2] / scale
             scaled_bbs[i,3] = scaled_bbs[i,3] / scale                
 
-        if bbs.shape[0]==0:
-            bbs = scaled_bbs
-        else:
-            bbs = np.vstack((bbs,scaled_bbs))
+        bbs = np.vstack((bbs,scaled_bbs))
+        #print 'bbs count: %d, %d' % (scaled_bbs.shape[0], bbs.shape[0])
 
+        
     if debug:
         time_det = time() - t_det1
         print "Total: ", time_det 

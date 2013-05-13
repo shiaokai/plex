@@ -1,7 +1,3 @@
-# cython: profile=True
-# cython: boundscheck=False
-# cython: wraparound=False
-
 import cPickle
 import os
 import shutil
@@ -12,7 +8,7 @@ from nms import BbsNms, HogResponseNms
 from hog_utils import draw_hog, ReshapeHog
 from helpers import CollapseLetterCase
 
-import cv2
+import cv,cv2
 from time import time
 
 import numpy as np
@@ -93,8 +89,8 @@ def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf,
     '''
     # loop over scales
     cdef np.ndarray[IDTYPE_t, ndim=3] scaled_img
-    cdef np.ndarray[DTYPE64_t, ndim=2] bbs = np.zeros((0,0), dtype=DTYPE64)
-    cdef np.ndarray[DTYPE64_t, ndim=2] scaled_bbs = np.zeros((0,0), dtype=DTYPE64)
+    cdef np.ndarray[DTYPE64_t, ndim=2] bbs = np.zeros((0,6), dtype=DTYPE64)
+    cdef np.ndarray[DTYPE64_t, ndim=2] scaled_bbs = np.zeros((0,6), dtype=DTYPE64)
     cdef np.ndarray[DTYPE32_t, ndim=2] feature_vector
     cdef np.ndarray[DTYPE32_t, ndim=3] feature_vector_3d
     cdef np.ndarray[DTYPE32_t, ndim=1] feats
@@ -132,7 +128,7 @@ def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf,
         if (canon_size[0] / scale) < min_pixel_height:
             continue
 
-        scaled_img=cv2.resize(img, (int(scale * img_w), int(scale * img_h)))
+        scaled_img=cv2.resize(img, (int(scale * img_w), int(scale * img_h)),interpolation=cv.CV_INTER_CUBIC)
 
         if debug:
             t_cmp0 = time()
@@ -202,10 +198,11 @@ def CharDetector(np.ndarray[IDTYPE_t, ndim=3] img, hog, rf,
             scaled_bbs[i,2] = scaled_bbs[i,2] / scale
             scaled_bbs[i,3] = scaled_bbs[i,3] / scale                
 
-        if bbs.shape[0]==0:
-            bbs = scaled_bbs
-        else:
-            bbs = np.vstack((bbs,scaled_bbs))
+        #if bbs.shape[0]==0:
+        #    bbs = scaled_bbs
+        #else:
+
+        bbs = np.vstack((bbs,scaled_bbs))
 
     if debug:
         time_det = time() - t_det1
