@@ -40,7 +40,8 @@ def WordSpot(img, lexicon, alpha, settings, use_cache=False, img_name='', max_lo
     word_bbs = WordDetector(char_bbs, lexicon, settings.alphabet_master, alpha,
                             max_locations=max_locations,
                             overlap_thr=settings.overlap_thr,
-                            svm_model=svm_model)
+                            svm_model=svm_model,
+                            apply_word_nms=True)
     print 'Word detector time: ', time() - start_time
     return (word_bbs, char_bbs)
 

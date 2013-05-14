@@ -105,7 +105,7 @@ def WordDetector(bbs, lexicon, alphabet, alpha, max_locations=3, overlap_thr=0.5
 
     # word nms
     if apply_word_nms:
-        results = WordBbsNms(results)
+        results = WordBbsNms(results, overlap_thr=overlap_thr)
 
     return results
 
