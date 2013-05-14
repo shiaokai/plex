@@ -59,7 +59,7 @@ def DebugCharBbs(img, char_bbs, alphabet, lexicon):
     active_letters = str(''.join(lexicon)).upper()
     active_letters = ''.join(set(sorted(active_letters)))
 
-    fig = plt.figure(figsize=(20*len(active_letters),40))
+    fig = plt.figure(figsize=(10, 10*len(active_letters)))
     plt.cla()
     plt.axis('off')
     counter = 1
