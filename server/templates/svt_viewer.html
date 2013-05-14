@@ -29,8 +29,10 @@
       var business_text = ''
       function initialize(){ 
         panoClient = new google.maps.StreetViewService();
-        lat = 32.754455;
-        lon = -117.215924;
+        //lat = 32.754455;
+        //lon = -117.215924;
+        lat = 32.797473;
+        lon = -117.251354;
         loadMaps(lat, lon);
         loadPlaces(lat, lon);        
         $('#geoloc').keypress(function(e){
@@ -147,6 +149,9 @@
 	    // TODO: this is the panoid which we will use it to download image at the backend
      	    //alert(map.getPano());
   	});
+	google.maps.event.addListener(map, 'pano_changed', function() {
+      loadPlaces(map.getPosition().lat(), map.getPosition().lng())
+  	});
 	// map is the Google street view handle
       }
       function getPanoOption(lat, lon){
@@ -177,7 +182,7 @@
     <button type="button" onclick="detect_with_plex()">Run PLEX</button>
     </div>
     <br>
-    <b>Business search results:</b> <br><div id="output" style="width:800px; height:50px; float:left; margin: 10px; border: 1px dashed #968895;"></div>
+    <b>Business search results:</b> <br><div id="output" style="width:800px; height:100px; float:left; margin: 10px; border: 1px dashed #968895;"></div>
 
     <div id="map-canvas" style="width:1px; height:1px;"></div>
     <div id="map_canvas" style="width:1000px; height:600px;"></div>
