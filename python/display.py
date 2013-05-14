@@ -15,6 +15,7 @@ def OutputCharBbs(img, bbs, alphabet, output_dir='dbg'):
 def DrawCharBbs(img, bbs, alphabet, filter_label=-1, draw_top=-1):
     fig = plt.figure()
     plt.cla()
+    plt.axis('off')
     ax = fig.add_subplot(111)
     img_rgb = img[:,:,[2,1,0]]
     plt.imshow(img_rgb);
@@ -58,15 +59,14 @@ def DebugCharBbs(img, char_bbs, alphabet, lexicon):
     active_letters = str(''.join(lexicon)).upper()
     active_letters = ''.join(set(sorted(active_letters)))
 
-
     fig = plt.figure(figsize=(20*len(active_letters),40))
     plt.cla()
+    plt.axis('off')
     counter = 1
 
     for active_letter in active_letters:
         letter_idx = alphabet.find(active_letter)
         bbs = char_bbs[char_bbs[:,5]==letter_idx,:]
-        #ax = fig.add_subplot(1, 1, counter)
         ax = fig.add_subplot(len(active_letters), 1, counter)
         counter += 1
         plt.imshow(img_rgb);
@@ -80,14 +80,23 @@ def DebugCharBbs(img, char_bbs, alphabet, lexicon):
             plt.text(bb[1],bb[0],"%s:%.02f" % (alphabet[int(bb[5])],float(bb[4])),
                      backgroundcolor=(1,1,1), size=6)
 
-def DrawWordResults(img, word_results):
-    fig = plt.figure()
+def DrawWordResults2(img, word_results, score_threshold=-np.inf,
+                     show_char_bbs=True):
+    """
+    Give each word its own figure
+    """
+    all_words = set([word_result[2] for word_result in word_results])
+    n_subplots = len(all_words) + 1
+    fig = plt.figure(figsize=(10, 10*n_subplots))
     plt.cla()
-    ax = fig.add_subplot(111)
-    img_rgb = img[:,:,[2,1,0]]
-    plt.imshow(img_rgb);
 
+    img_rgb = img[:,:,[2,1,0]]
+
+    # draw all bounding boxes
+    word_results.reverse()
     for word_result in word_results:
+        ax = fig.add_subplot(n_subplots, 1, 1)
+        plt.imshow(img_rgb);
         word_bb = word_result[0][0]
         patch = mpl.patches.Rectangle((word_bb[1],word_bb[0]),
                                       word_bb[3],word_bb[2],
@@ -97,17 +106,68 @@ def DrawWordResults(img, word_results):
         plt.text(word_bb[1],word_bb[0],"%s:%.02f" % (word_result[2], float(word_bb[4])),
                  backgroundcolor=(1,1,1))
 
-        char_bbs = word_result[1]
-        for char_bb in char_bbs:
-            char_patch = mpl.patches.Rectangle((char_bb[1],char_bb[0]),
-                                               char_bb[3],char_bb[2],
-                                               color='c', fill=False,
-                                               linestyle='dashed')
-            ax.add_patch(char_patch)
+    # draw individual word results
+    counter = 2
+    for active_word in all_words:
+        ax = fig.add_subplot(n_subplots, 1, counter)
+        plt.imshow(img_rgb);
+        counter += 1
+        for word_result in word_results:
+            if word_result[2] != active_word:
+                continue
+
+            word_bb = word_result[0][0]
+            patch = mpl.patches.Rectangle((word_bb[1],word_bb[0]),
+                                          word_bb[3],word_bb[2],
+                                          color='green',
+                                          fill=False)
+            ax.add_patch(patch)
+            plt.text(word_bb[1],word_bb[0],"%s:%.02f" % (word_result[2], float(word_bb[4])),
+                     backgroundcolor=(1,1,1))
+
+            if show_char_bbs:
+                char_bbs = word_result[1]
+                for char_bb in char_bbs:
+                    char_patch = mpl.patches.Rectangle((char_bb[1],char_bb[0]),
+                                                       char_bb[3],char_bb[2],
+                                                       color='c', fill=False,
+                                                       linestyle='dashed')
+                    ax.add_patch(char_patch)
+
+def DrawWordResults(img, word_results, score_threshold=-np.inf,
+                    show_char_bbs=False):
+    fig = plt.figure()
+    plt.cla()
+    plt.axis('off')
+    ax = fig.add_subplot(111)
+    img_rgb = img[:,:,[2,1,0]]
+    plt.imshow(img_rgb);
+
+    for word_result in word_results:
+        word_bb = word_result[0][0]
+        if word_bb[4] < score_threshold:
+            continue
+        patch = mpl.patches.Rectangle((word_bb[1],word_bb[0]),
+                                      word_bb[3],word_bb[2],
+                                      color='green',
+                                      fill=False)
+        ax.add_patch(patch)
+        plt.text(word_bb[1],word_bb[0],"%s:%.02f" % (word_result[2], float(word_bb[4])),
+                 backgroundcolor=(1,1,1))
+
+        if show_char_bbs:
+            char_bbs = word_result[1]
+            for char_bb in char_bbs:
+                char_patch = mpl.patches.Rectangle((char_bb[1],char_bb[0]),
+                                                   char_bb[3],char_bb[2],
+                                                   color='c', fill=False,
+                                                   linestyle='dashed')
+                ax.add_patch(char_patch)
 
 def DrawEvalResults(img, gt_result, dt_result, show_error_text=False):
     fig = plt.figure(1)
     plt.cla()
+    plt.axis('off')
     ax = fig.add_subplot(111)
     img_rgb = img[:,:,[2,1,0]]
     plt.imshow(img_rgb);

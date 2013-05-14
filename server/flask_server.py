@@ -20,7 +20,7 @@ sys.path.append(settings.libsvm_path)
 import svmutil as svm
 
 sys.path.append(os.path.join('..','python'))
-from display import DrawWordResults, DebugCharBbs
+from display import DrawWordResults2, DebugCharBbs
 from wordspot import WordSpot
 
 with open(settings.char_clf_name,'rb') as fid:
@@ -31,13 +31,18 @@ with open(settings.word_clf_meta_name,'rb') as fid:
     alpha_min_max = cPickle.load(fid)
 alpha = alpha_min_max[0]
 min_max = (alpha_min_max[1], alpha_min_max[2])
-svm_clf = svm.svm_load_model(settings.word_clf_poly_name)
+svm_clf = svm.svm_load_model(settings.word_clf_name)
 svm_model=(svm_clf,min_max)
 
 app = Flask(__name__)
 app.config['CTRL_F_UPLOAD_FOLDER'] = '/var/www/plex'
 app.config['SVT_UPLOAD_FOLDER'] = '/var/www/svt'
 app.debug = False
+
+# ---------------------
+# -- SOME PARAMETERS --
+# ---------------------
+score_threshold = -1
 
 @app.route('/')
 def hello_world():
@@ -84,7 +89,7 @@ def svt_run_swt_tess():
 
     pano_map = PanoMap(pano_id, car_yaw, app.config['SVT_UPLOAD_FOLDER'])
     img_cutout_filename = pano_map.cutout(img_width, img_height, pitch, yaw, hfov, override=1)
-    img_result_filename = img_cutout_filename + '_result.jpg'
+    img_result_filename = img_cutout_filename + '_result.png'
     # call SWT+TESS for now
     
     print 'business search result: ', request.form['business-text']
@@ -111,7 +116,7 @@ def svt_run_plex():
 
     pano_map = PanoMap(pano_id, car_yaw, app.config['SVT_UPLOAD_FOLDER'])
     img_cutout_filename = pano_map.cutout(img_width, img_height, pitch, yaw, hfov, override=1)
-    img_result_filename = img_cutout_filename + '_result.jpg'
+    img_result_filename = img_cutout_filename + '_result.png'
     
     lexicon = StringToLexicon(str(request.form['business-text']))
     RunPlex(img_cutout_filename, lexicon, 1,
@@ -231,12 +236,12 @@ def RunPlex(img_name, lexicon, max_locations, result_path, rf, alpha, svm_model=
                                      img_name=img_name, max_locations=max_locations,
                                      svm_model=svm_model, rf_preload=rf)
 
-    DrawWordResults(img, match_bbs)
-    plt.savefig(result_path)
+    DrawWordResults2(img, match_bbs)
+    plt.savefig(result_path, bbox_inches='tight')
 
     if show_char_bbs is not None:
         DebugCharBbs(img, char_bbs, settings.alphabet_master, lexicon)
-        plt.savefig(show_char_bbs)
+        plt.savefig(show_char_bbs, bbox_inches='tight')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
