@@ -27,6 +27,7 @@
       var map_places = '';
       var panoClient;
       var business_text = ''
+      var max_business_names = 10
       function initialize(){ 
         panoClient = new google.maps.StreetViewService();
         //lat = 32.754455;
@@ -124,8 +125,9 @@
         });
         var request = {
           location: latlon,
-          radius: 100,
-          types: ['restaurant']
+          //radius: 100,
+          rankBy: google.maps.places.RankBy.DISTANCE,
+          types: ['restaurant','store']
         };
         var service = new google.maps.places.PlacesService(map_places);
         service.nearbySearch(request, places_callback);
@@ -134,7 +136,7 @@
         var div = document.getElementById('output')
         business_text = ''
         if (status == google.maps.places.PlacesServiceStatus.OK) {
-          for (var i = 0; i < results.length; i++) {
+          for (var i = 0; i < Math.min(max_business_names, results.length); i++) {
              business_text = business_text + results[i].name + ' '
             //javascript: console.log()
           }
