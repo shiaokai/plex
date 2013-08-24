@@ -27,8 +27,7 @@ def ReadAllImages(char_dir, bg_dir, char_classes,
     labels=np.zeros(0)
     k = 0
     max_allocate=1e5
-    for class_index in range(len(char_classes)):
-        cur_class = char_classes[class_index]
+    for class_index, cur_class in enumerate(char_classes):
         if cur_class == '_':
             imgs_dir = bg_dir  # background class
         else:
@@ -40,14 +39,14 @@ def ReadAllImages(char_dir, bg_dir, char_classes,
         for root, dirs, files in os.walk(imgs_dir):
             add_files = [os.path.join(root, f) for f in files]
             filelist += add_files
-        if cur_class == '_':
-            if (max_bg < np.inf) and (len(files) > max_bg):
-                random.shuffle(filelist)
-                filelist = filelist[0:max_bg]
-        else:
-            if (max_per_class < np.inf) and (len(filelist) > max_per_class):
-                random.shuffle(filelist)
-                filelist = filelist[0:max_per_class]
+            if cur_class == '_':
+                if (max_bg < np.inf) and (len(files) > max_bg):
+                    random.shuffle(filelist)
+                    filelist = filelist[0:max_bg]
+            else:
+                if (max_per_class < np.inf) and (len(filelist) > max_per_class):
+                    random.shuffle(filelist)
+                    filelist = filelist[0:max_per_class]
 
         for path in filelist:
             p1,ext=os.path.splitext(path)
